@@ -1,0 +1,18 @@
+[project]
+name = "cognitive-soccer-ml"
+version = "0.1.0"
+description = "Machine learning approach to predict player effectiveness in small-sided soccer games from cognitive functions"
+readme = "README.md"
+requires-python = ">=3.12.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "seaborn",
+    "imbalanced-learn",
+    "xgboost",
+    "openpyxl",
+    "statsmodels",
+]

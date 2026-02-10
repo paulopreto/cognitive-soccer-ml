@@ -416,3 +416,48 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# -----------------------------------------------------------------------------
+# Python / uv (Linux, Windows, macOS)
+# -----------------------------------------------------------------------------
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+ENV/
+
+# uv (cache; uv.lock é versionado para builds reproduzíveis)
+.uv/
+
+# Bytecode e caches
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+*.manifest
+*.spec
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type checkers e linters
+.mypy_cache/
+.dmypy.json
+.dmypy.json
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ( .python-version é versionado para uv/pyenv usar 3.12.12 )
