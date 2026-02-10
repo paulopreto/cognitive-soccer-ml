@@ -1,0 +1,8 @@
+Nome do Algoritmo,Melhor Resultado,Melhores Parametros
+GaussianNB,0.5716666666666667,{}
+RandomForestClassifier,0.6183333333333333,"{'criterion': 'entropy', 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 100}"
+KNeighborsClassifier,0.5766666666666667,"{'n_neighbors': 5, 'p': 1}"
+LogisticRegression,0.5433333333333332,"{'C': 2.0, 'solver': 'lbfgs', 'tol': 0.001}"
+SVC,0.5833333333333333,"{'C': 1.5, 'kernel': 'rbf', 'tol': 0.001}"
+MLPClassifier,0.7133333333333333,"{'activation': 'relu', 'hidden_layer_sizes': (10, 10), 'max_iter': 1000, 'random_state': 0, 'solver': 'sgd'}"
+XGBClassifier,0.5916666666666666,"{'learning_rate': 0.1, 'max_depth': 4, 'min_child_weight': 1, 'n_estimators': 200}"
