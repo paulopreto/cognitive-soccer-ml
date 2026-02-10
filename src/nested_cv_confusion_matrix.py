@@ -12,7 +12,7 @@ with inner hyperparameter optimization (Grid Search) and outer model evaluation.
 For each dataset, a confusion matrix is generated based on predictions aggregated
 over the entire Nested CV procedure.
 
-The script generates a single figure containing 4 confusion matrices, each corresponding 
+The script generates a single figure containing 4 confusion matrices, each corresponding
 to a different dataset configuration. The figure is saved as a high-resolution image.
 
 Pipeline Steps:
@@ -37,15 +37,17 @@ Supported Algorithms:
 import os
 import pickle
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
-    confusion_matrix, ConfusionMatrixDisplay,
-    precision_score, recall_score, accuracy_score,
-    balanced_accuracy_score
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    precision_score,
+    recall_score,
+    accuracy_score,
+    balanced_accuracy_score,
 )
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
@@ -55,64 +57,65 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
 
+
 # -------------------------------
 # Function to Instantiate Model by Name
 # -------------------------------
 def get_model_by_name(name):
-    if name == 'GaussianNB':
+    if name == "GaussianNB":
         return GaussianNB()
-    elif name == 'RandomForestClassifier':
+    elif name == "RandomForestClassifier":
         return RandomForestClassifier()
-    elif name == 'KNeighborsClassifier':
+    elif name == "KNeighborsClassifier":
         return KNeighborsClassifier()
-    elif name == 'LogisticRegression':
+    elif name == "LogisticRegression":
         return LogisticRegression()
-    elif name == 'SVC':
+    elif name == "SVC":
         return SVC()
-    elif name == 'MLPClassifier':
+    elif name == "MLPClassifier":
         return MLPClassifier()
-    elif name == 'XGBClassifier':
+    elif name == "XGBClassifier":
         return XGBClassifier()
     else:
         raise ValueError(f"Unsupported algorithm: {name}")
+
 
 # -------------------------------
 # Function to Define Grid Search Parameter Space per Algorithm
 # -------------------------------
 def get_param_grid(name):
-    if name == 'KNeighborsClassifier':
+    if name == "KNeighborsClassifier":
+        return {"clf__n_neighbors": [1, 2, 3, 5, 10, 20], "clf__p": [1, 2]}
+    elif name == "MLPClassifier":
         return {
-            'clf__n_neighbors': [1, 2, 3, 5, 10, 20],
-            'clf__p': [1, 2]
-        }
-    elif name == 'MLPClassifier':
-        return {
-            'clf__max_iter': [100, 500, 1000, 1500],
-            'clf__activation': ['relu', 'logistic', 'tanh'],
-            'clf__solver': ['adam', 'sgd'],
-            'clf__hidden_layer_sizes': [(5, 5), (10, 10), (25, 25), (50, 50)],
-            'clf__random_state': [0],
+            "clf__max_iter": [100, 500, 1000, 1500],
+            "clf__activation": ["relu", "logistic", "tanh"],
+            "clf__solver": ["adam", "sgd"],
+            "clf__hidden_layer_sizes": [(5, 5), (10, 10), (25, 25), (50, 50)],
+            "clf__random_state": [0],
         }
     else:
         raise ValueError(f"No grid defined for: {name}")
+
 
 # -------------------------------
 # Function to Get Plot Title from Dataset Identifier
 # -------------------------------
 def get_title_from_identifier(identifier):
     titles = {
-        'gf': "Individual Goals",
-        'gs': "Conceded Goals",
-        'gc': "Goals by Teammates",
-        'sg': "Net Goals",
+        "gf": "Individual Goals",
+        "gs": "Conceded Goals",
+        "gc": "Goals by Teammates",
+        "sg": "Net Goals",
     }
     return titles.get(identifier, f"Confusion Matrix - {identifier.upper()}")
+
 
 # -------------------------------
 # Main Function to Run Nested Cross-Validation and Plot Confusion Matrices
 # -------------------------------
 def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final):
-    plt.rcParams.update({'xtick.labelsize': 14, 'ytick.labelsize': 14})
+    plt.rcParams.update({"xtick.labelsize": 14, "ytick.labelsize": 14})
 
     # Create 2x2 grid for the four confusion matrices
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
@@ -123,11 +126,11 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
 
     # Iterate through each dataset configuration
     for idx, info in enumerate(datasets_info):
-        path_data = info['path_data']
-        identifier = info['identificador']
+        path_data = info["path_data"]
+        identifier = info["identificador"]
 
         # Load dataset (pickle file format)
-        with open(os.path.join(path_data, f"cogfut_{identifier}.pkl"), 'rb') as f:
+        with open(os.path.join(path_data, f"cogfut_{identifier}.pkl"), "rb") as f:
             X_train, y_train, X_test, y_test = pickle.load(f)
 
         # Concatenate train and test sets for full dataset evaluation
@@ -139,8 +142,8 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
             y = LabelEncoder().fit_transform(y)
 
         # Algorithm selection (MLP forced for 'gf' dataset)
-        if identifier == 'gf':
-            model_name = 'MLPClassifier'
+        if identifier == "gf":
+            model_name = "MLPClassifier"
         else:
             model_name = algorithm_name
 
@@ -160,18 +163,15 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
                 y_tr, y_te = y[train_idx], y[test_idx]
 
                 # Define pipeline: StandardScaler + Classifier
-                pipe = Pipeline([
-                    ('scaler', StandardScaler()),
-                    ('clf', model)
-                ])
+                pipe = Pipeline([("scaler", StandardScaler()), ("clf", model)])
 
                 # Hyperparameter Optimization (Grid Search with Inner CV)
                 grid_search = GridSearchCV(
                     pipe,
                     param_grid=param_grid,
                     cv=inner_cv,
-                    scoring='balanced_accuracy',
-                    n_jobs=-1
+                    scoring="balanced_accuracy",
+                    n_jobs=-1,
                 )
 
                 grid_search.fit(X_tr, y_tr)
@@ -185,28 +185,32 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
         cm = confusion_matrix(y_true_all, y_pred_all)
         acc = accuracy_score(y_true_all, y_pred_all)
         balanced_acc = balanced_accuracy_score(y_true_all, y_pred_all)
-        precision = precision_score(y_true_all, y_pred_all, average=None, zero_division=0)
+        precision = precision_score(
+            y_true_all, y_pred_all, average=None, zero_division=0
+        )
         recall = recall_score(y_true_all, y_pred_all, average=None, zero_division=0)
 
         # Adjust class labels display order for 'gs' identifier
-        if identifier == 'gs':
+        if identifier == "gs":
             class_labels = ["High", "Low"]
         else:
             class_labels = ["Low", "High"]
 
         # Plot Confusion Matrix
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_labels)
-        disp.plot(ax=axes[idx], cmap='Reds', colorbar=False, values_format='d')
+        disp.plot(ax=axes[idx], cmap="Reds", colorbar=False, values_format="d")
 
         # Increase font size inside cells
         for text in disp.text_.ravel():
             text.set_fontsize(16)
 
         # Axis label formatting
-        axes[idx].tick_params(axis='both', which='major', labelsize=14)
-        axes[idx].set_title(get_title_from_identifier(identifier), fontsize=16, weight='bold')
-        axes[idx].set_xlabel('Predicted Label', fontsize=14)
-        axes[idx].set_ylabel('True Label', fontsize=14)
+        axes[idx].tick_params(axis="both", which="major", labelsize=14)
+        axes[idx].set_title(
+            get_title_from_identifier(identifier), fontsize=16, weight="bold"
+        )
+        axes[idx].set_xlabel("Predicted Label", fontsize=14)
+        axes[idx].set_ylabel("True Label", fontsize=14)
 
         # Annotate Metrics beside each Confusion Matrix
         metrics_text = f"Accuracy: {acc:.2%}\nBalanced Acc.: {balanced_acc:.2%}\n\n"
@@ -215,14 +219,25 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
             metrics_text += f"  - Precision: {precision[i]:.2f}\n"
             metrics_text += f"  - Recall:    {recall[i]:.2f}\n\n"
 
-        props = dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, edgecolor='gray')
-        axes[idx].text(1.05, 0.5, metrics_text.strip(), transform=axes[idx].transAxes,
-                       fontsize=12, bbox=props, verticalalignment='center')
+        props = dict(
+            boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="gray"
+        )
+        axes[idx].text(
+            1.05,
+            0.5,
+            metrics_text.strip(),
+            transform=axes[idx].transAxes,
+            fontsize=12,
+            bbox=props,
+            verticalalignment="center",
+        )
 
     # Adjust layout and save final figure
     plt.tight_layout()
     os.makedirs(path_save_img_final, exist_ok=True)
-    full_path = os.path.join(path_save_img_final, f"confusion_matrices_NestedCV_{algorithm_name}.png")
+    full_path = os.path.join(
+        path_save_img_final, f"confusion_matrices_NestedCV_{algorithm_name}.png"
+    )
     plt.savefig(full_path, dpi=300)
     plt.show()
     print(f"[OK] Final figure saved: {full_path}")
@@ -233,22 +248,22 @@ if __name__ == "__main__":
     run_all_NestedCV_matrices(
         datasets_info=[
             {
-                'path_data': 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)',
-                'identificador': 'gf'
+                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
+                "identificador": "gf",
             },
             {
-                'path_data': 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span',
-                'identificador': 'gs'
+                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span",
+                "identificador": "gs",
             },
             {
-                'path_data': 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Acuracia_nogo_Capacidade_de_rastreamento',
-                'identificador': 'gc'
+                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Acuracia_nogo_Capacidade_de_rastreamento",
+                "identificador": "gc",
             },
             {
-                'path_data': 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)',
-                'identificador': 'sg'
+                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)",
+                "identificador": "sg",
             },
         ],
-        algorithm_name='KNeighborsClassifier',
-        path_save_img_final='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\matriz_final_NestedCV'
+        algorithm_name="KNeighborsClassifier",
+        path_save_img_final="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\matriz_final_NestedCV",
     )

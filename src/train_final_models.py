@@ -39,20 +39,22 @@ Pipeline Steps:
 """
 
 import os
-import sys
 from pathlib import Path
 
-# Ensure src directory is on path when run from project root
+try:
+    from . import hyperparameter_tuning
+    from . import nested_cv_evaluation
+except ImportError:
+    import hyperparameter_tuning
+    import nested_cv_evaluation
+
 _SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = _SCRIPT_DIR.parent
-if str(_SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(_SCRIPT_DIR))
-
-import hyperparameter_tuning
-import nested_cv_evaluation
 
 
-def run_training_pipeline(path_dir_combinations, path_best_param_base, path_results_cv_base):
+def run_training_pipeline(
+    path_dir_combinations, path_best_param_base, path_results_cv_base
+):
     """
     Run hyperparameter tuning and nested CV evaluation for each dataset combination.
 
@@ -86,7 +88,7 @@ def run_training_pipeline(path_dir_combinations, path_best_param_base, path_resu
             normal=True,
             metade=False,
             path_data=path_data,
-            path_save=path_param
+            path_save=path_param,
         )
 
         # Nested Cross-Validation (Model Evaluation)
@@ -98,23 +100,22 @@ def run_training_pipeline(path_dir_combinations, path_best_param_base, path_resu
             n_splits_kfold=5,
             oversample=False,
             normal=True,
-            metade=False
+            metade=False,
         )
 
 
 if __name__ == "__main__":
     # Default paths: use project-relative paths for portability
     path_dir_combinations = os.environ.get(
-        "PATH_ML_DATASETS",
-        str(PROJECT_ROOT / "data" / "ML_datasets")
+        "PATH_ML_DATASETS", str(PROJECT_ROOT / "data" / "ML_datasets")
     )
     path_best_param_base = os.environ.get(
-        "PATH_BEST_PARAM",
-        str(PROJECT_ROOT / "best_param")
+        "PATH_BEST_PARAM", str(PROJECT_ROOT / "best_param")
     )
     path_results_cv_base = os.environ.get(
-        "PATH_RESULTS_CV",
-        str(PROJECT_ROOT / "results_CV")
+        "PATH_RESULTS_CV", str(PROJECT_ROOT / "results_CV")
     )
 
-    run_training_pipeline(path_dir_combinations, path_best_param_base, path_results_cv_base)
+    run_training_pipeline(
+        path_dir_combinations, path_best_param_base, path_results_cv_base
+    )

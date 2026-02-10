@@ -15,4 +15,6 @@ dependencies = [
     "xgboost",
     "openpyxl",
     "statsmodels",
+    "ruff>=0.15.0",
+    "pytest>=8.0",
 ]

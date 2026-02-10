@@ -44,10 +44,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 def run_permutation_test(
-    path_pkl,
-    n_permutations=1000,
-    output_dir=None,
-    random_state=0
+    path_pkl, n_permutations=1000, output_dir=None, random_state=0
 ):
     """
     Run permutation test to assess whether model performance is better than chance.
@@ -88,18 +85,22 @@ def run_permutation_test(
     y = np.concatenate((y_train, y_test), axis=0)
     n_samples = len(y)
 
-    pipeline = Pipeline([
-        ("scaler", StandardScaler()),
-        ("clf", KNeighborsClassifier(n_neighbors=5, p=2))
-    ])
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("clf", KNeighborsClassifier(n_neighbors=5, p=2)),
+        ]
+    )
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
 
     score, perm_scores, pvalue = permutation_test_score(
-        pipeline, X, y,
+        pipeline,
+        X,
+        y,
         cv=cv,
         n_permutations=n_permutations,
         random_state=random_state,
-        n_jobs=-1
+        n_jobs=-1,
     )
 
     # Build figure
@@ -125,7 +126,9 @@ def run_permutation_test(
     print(f"     Empirical p-value: {pvalue:.4f}")
     print(f"     Figure saved: {out_path}")
     if pvalue < 0.05:
-        print("     Conclusion: Model performance is significantly better than chance (p < 0.05).")
+        print(
+            "     Conclusion: Model performance is significantly better than chance (p < 0.05)."
+        )
     else:
         print("     Conclusion: Cannot reject null (performance may be due to chance).")
 
@@ -148,7 +151,9 @@ if __name__ == "__main__":
     if default_pkl is None:
         fallbacks = [
             project_root / "data" / "cogfut_gf.pkl",
-            data_dir / "Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)" / "cogfut_gf.pkl",
+            data_dir
+            / "Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"
+            / "cogfut_gf.pkl",
         ]
         for candidate in fallbacks:
             if candidate.is_file():
@@ -162,9 +167,10 @@ if __name__ == "__main__":
         )
 
     import os
+
     path_pkl_env = os.environ.get("PATH_PKL")
     run_permutation_test(
         path_pkl=Path(path_pkl_env) if path_pkl_env else default_pkl,
         n_permutations=1000,
-        output_dir=project_root / "figures"
+        output_dir=project_root / "figures",
     )
