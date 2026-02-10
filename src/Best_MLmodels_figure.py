@@ -153,7 +153,7 @@ algorithms_colors = {
     'LogisticRegression': '#2ca02c',
     'SVM': '#4C72B0',           
     'Xgboost': '#9467bd',       
-    'Rede neural': '#FF7F0E',   
+    'Neural network': '#FF7F0E',   
     'Naive':  '#D62828'        
 }
 
@@ -191,7 +191,7 @@ for i, sigla in enumerate(siglas):
     handles_i, labels_i = axs[i].get_legend_handles_labels()
     for handle, label in zip(handles_i, labels_i):
         # Standardize algorithm labels for final legend
-        if label == 'Rede neural':
+        if label == 'Neural network':
             label_ = 'MLP'
         elif label == 'Random forest':
             label_ = 'RF'

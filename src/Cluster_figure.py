@@ -9,7 +9,7 @@ Description:
 This script generates violin plots combined with jittered scatter points to visualize 
 the distribution of various goal-related performance metrics across two distinct 
 performance groups (clusters). Each subplot represents a specific performance indicator, 
-displaying the separation between 'Superior' and 'Inferior' groups as identified 
+displaying the separation between 'High' and 'Low' performance groups as identified 
 through clustering analysis.
 
 Key Features:
@@ -67,8 +67,8 @@ def plot_vertical_clustered_with_violin(ax, df, data_col, cluster_col, y_label, 
 
     # Define label mapping for clusters
     base_label_map = {
-        0: 'Inferior',
-        1: 'Superior'
+        0: 'Low',
+        1: 'High'
     }
 
     # Invert colors and labels if metric represents a negative performance indicator (goals conceded)

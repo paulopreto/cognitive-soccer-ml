@@ -115,7 +115,7 @@ def extrair_salvar_medias(path_dir_combinacoes):
                'precision_class_0', 'precision_class_1', 'recall_class_0', 'recall_class_1',
                'f1_class_0', 'f1_class_1']
 
-    columns = ['variaveis', 'Naive', 'Random forest', 'KNN', 'Logistica', 'SVM', 'Rede neural', 'Xgboost']
+    columns = ['variables', 'Naive', 'Random forest', 'KNN', 'Logistic Regression', 'SVM', 'Neural network', 'Xgboost']
 
     # Create empty containers for means and std devs per tuning attempt prefix
     resultados_gf, resultados_gs, resultados_gc, resultados_sg, resultados_gf_dp, resultados_gs_dp, resultados_gc_dp, resultados_sg_dp = criar_variaveis_vazias(metrics, columns)
@@ -133,10 +133,10 @@ def extrair_salvar_medias(path_dir_combinacoes):
                         mean_vals = df_metric.mean()
                         std_vals = df_metric.std()
 
-                        variavel = pd.Series({'variaveis': dir_name})
-                        mean_row = pd.concat([variavel, mean_vals])
+                        variable_row = pd.Series({'variables': dir_name})
+                        mean_row = pd.concat([variable_row, mean_vals])
                         mean_row = pd.DataFrame(mean_row).transpose()
-                        std_row = pd.concat([variavel, std_vals])
+                        std_row = pd.concat([variable_row, std_vals])
                         std_row = pd.DataFrame(std_row).transpose()
 
                         if prefix == 'gf':

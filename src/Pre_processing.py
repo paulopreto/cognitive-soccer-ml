@@ -2,14 +2,14 @@
 ------------------------------------------------------------------------------
 Dataset Preparation Pipeline for Cognitive-Match Analysis with Clustering Labels
 ------------------------------------------------------------------------------
-Author: Rafael Luiz Martins Monteiro (adaptado)
+Author: Rafael Luiz Martins Monteiro (adapted)
 
 Description:
 -------------
 This script automates the preparation of datasets for machine learning pipelines
-involving cognitive metrics and on-field performance outcomes (gols feitos, gols sofridos, etc.).
+involving cognitive metrics and on-field performance outcomes (goals scored, goals conceded, etc.).
 It generates `.pkl` files containing train/test splits with labels defined by KMeans clustering
-or a binary 'Metade' split (based on performance ranks).
+or a binary 'Half' split (based on performance ranks).
 
 Main Workflow:
 ---------------
@@ -17,12 +17,12 @@ Main Workflow:
 2. For each combination of cognitive variables:
     a. Normalize cognitive data.
     b. Perform KMeans clustering on field metrics (per team) to generate labels.
-    c. (Optional) Use "Metade" method to split top/bottom performers.
+    c. (Optional) Use "Half" method to split top/bottom performers.
     d. Split into train/test sets (75/25).
     e. Save data into `.pkl` files for future ML model training.
 3. Supports:
     - KMeans clustering (default)
-    - Binary 'Metade' labeling
+    - Binary 'Half' labeling
     - Oversampling (SMOTE-ready datasets)
 
 Inputs:
@@ -40,7 +40,7 @@ Output:
 -------------------------------------------------------------------------------
 """
 
-# === Bibliotecas ===
+# === Imports ===
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -57,12 +57,12 @@ from itertools import combinations
 # -------------------------------
 # Generate all possible combinations of a list of columns
 # -------------------------------
-def gerar_combinacoes(colunas):
-    todas_combinacoes = []
-    for r in range(1, len(colunas) + 1):
-        comb = list(combinations(colunas, r))
-        todas_combinacoes.extend(comb)
-    return todas_combinacoes       
+def generate_combinations(cols):
+    all_combinations = []
+    for r in range(1, len(cols) + 1):
+        comb = list(combinations(cols, r))
+        all_combinations.extend(comb)
+    return all_combinations       
 
 # -------------------------------
 # Apply KMeans clustering to a DataFrame and add cluster labels
@@ -97,7 +97,7 @@ def kmeans_cluster_teams(dados, n_clusters):
 # -------------------------------
 # Add Binary Cluster Label Splitting Top/Bottom Half (per Team)
 # -------------------------------
-def add_cluster_metade(dados):
+def add_cluster_half(dados):
     d_sorted = dados.sort_values(by=0, ascending=False)
     midpoint = len(d_sorted) // 2
     d_sorted['cluster'] = 0
@@ -105,17 +105,17 @@ def add_cluster_metade(dados):
     return d_sorted.sort_index()
 
 # -------------------------------
-# Apply Metade Labeling per Team
+# Apply Half Labeling per Team
 # -------------------------------
-def label_metade_teams(dados, n_clusters):
+def label_half_teams(dados, n_clusters):
     dados_1team = dados[:22].copy()
     dados_2team = dados[22:].copy()
 
     scaler_1team = StandardScaler()
-    dados_team_1 = add_cluster_metade(pd.DataFrame(scaler_1team.fit_transform(dados_1team)))
+    dados_team_1 = add_cluster_half(pd.DataFrame(scaler_1team.fit_transform(dados_1team)))
 
     scaler_2team = StandardScaler()
-    dados_team_2 = add_cluster_metade(pd.DataFrame(scaler_2team.fit_transform(dados_2team)))
+    dados_team_2 = add_cluster_half(pd.DataFrame(scaler_2team.fit_transform(dados_2team)))
 
     dados_com_clusters = pd.concat([dados_team_1, dados_team_2])
     return dados_com_clusters
@@ -184,10 +184,10 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
 
     # Save Datasets (Metade Scenario)
     if metade:
-        Y_gf = label_metade_teams(Y_campo[['gols_feitos']], n_clusters_Desempenho_campo)
-        Y_gs = label_metade_teams(Y_campo[['gols_sofridos']], n_clusters_Desempenho_campo)
-        Y_gc = label_metade_teams(Y_campo[['gols_companheiros']], n_clusters_Desempenho_campo)
-        Y_sg = label_metade_teams(Y_campo[['saldo_gols']], n_clusters_Desempenho_campo)
+        Y_gf = label_half_teams(Y_campo[['gols_feitos']], n_clusters_Desempenho_campo)
+        Y_gs = label_half_teams(Y_campo[['gols_sofridos']], n_clusters_Desempenho_campo)
+        Y_gc = label_half_teams(Y_campo[['gols_companheiros']], n_clusters_Desempenho_campo)
+        Y_sg = label_half_teams(Y_campo[['saldo_gols']], n_clusters_Desempenho_campo)
 
         datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
         for name, Y in datasets:
@@ -200,10 +200,10 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
 # -------------------------------
 if __name__ == "__main__":
     colunas_func_cog = ['Memory span', 'Acuracia Go', 'Acuracia nogo', 'Capacidade de rastreamento', 'Flexibilidade cognitiva (B-A)']
-    combinacoes = gerar_combinacoes(colunas_func_cog)
+    combinations_list = generate_combinations(colunas_func_cog)
     path_base_save = 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets2'
 
-    for combinacao in combinacoes:
+    for combinacao in combinations_list:
         combinacao_str = '_'.join([col.replace(' ', '_') for col in combinacao])
         path_save = os.path.join(path_base_save, combinacao_str)
 

@@ -63,8 +63,8 @@ def load_best_params(path_csv, algorithm_name):
     with open(path_csv, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            if row['Nome do Algoritmo'] == algorithm_name:
-                return eval(row['Melhores Parametros'])
+            if row['Algorithm Name'] == algorithm_name:
+                return eval(row['Best Params'])
     raise ValueError(f"Parameters for {algorithm_name} not found in {path_csv}")
 
 def get_model_by_name(name, params):
@@ -161,9 +161,9 @@ def run_all_LOO_matrices(datasets_info, algorithm_name, path_save_img_final):
 
         # Adjust class label ordering for 'gs' dataset
         if identifier == 'gs':
-            class_labels = ["Superior", "Inferior"]
+            class_labels = ["High", "Low"]
         else:
-            class_labels = ["Inferior", "Superior"]
+            class_labels = ["Low", "High"]
 
         # Plot the confusion matrix in the respective subplot
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_labels)

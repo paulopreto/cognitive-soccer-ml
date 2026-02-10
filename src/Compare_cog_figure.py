@@ -7,7 +7,7 @@ Author: Rafael Luiz Martins Monteiro
 Description:
 -------------
 This script performs non-parametric statistical comparisons (Mann-Whitney U Test) 
-between two performance groups ('Superior' vs. 'Inferior') for a set of cognitive 
+between two performance groups ('High' vs. 'Low') for a set of cognitive 
 function metrics. It visualizes these comparisons using boxplots overlaid with individual 
 data points, enabling the visualization of central tendencies, dispersion, and potential 
 outliers across performance groups in football players.
@@ -86,7 +86,7 @@ comparisons = {
     'saldo_gols': 'Net Goals'
 }
 
-# Custom color palette for 'Inferior' and 'Superior' groups
+# Custom color palette for 'Low' and 'High' performance groups
 palette = ['#D62728', '#1F77B4']
 
 # Output folder for saving the figure
@@ -183,7 +183,7 @@ for row_idx, feature in enumerate(features):
         ax.set_xlabel('')
         ax.set_xticks([0, 1])
         if row_idx == len(features) - 1:
-            ax.set_xticklabels(['Inferior', 'Superior'], fontsize=10)
+            ax.set_xticklabels(['Low', 'High'], fontsize=10)
         else:
             ax.set_xticklabels([])
 
@@ -197,8 +197,8 @@ for row_idx, feature in enumerate(features):
 # Unified Legend Creation
 # ---------------------------
 handles = [
-    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor=palette[0], label='Inferior', markersize=10),
-    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor=palette[1], label='Superior', markersize=10),
+    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor=palette[0], label='Low', markersize=10),
+    plt.Line2D([0], [0], marker='s', color='w', markerfacecolor=palette[1], label='High', markersize=10),
     plt.Line2D([0], [0], marker='o', color='black', linestyle='', label='Individual Performance', markersize=6, alpha=0.6),
     plt.Line2D([0], [0], marker='o', color='black', markerfacecolor='red', linestyle='', label='Outlier', markersize=6)
 ]

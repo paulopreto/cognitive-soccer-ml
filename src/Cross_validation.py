@@ -58,72 +58,72 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, roc_auc_score, balanced_accuracy_score, matthews_corrcoef
 import math
 
-def salvar_resultados_brutos_em_xlsx(resultados, path_save, identificador):
+def save_raw_results_to_xlsx(results, path_save, identifier):
     """
     Save raw results to an XLSX file, with each sheet representing a metric.
 
     Args:
-        resultados (dict): Dictionary with results for each algorithm.
+        results (dict): Dictionary with results for each algorithm.
         path_save (str): Path where to save the XLSX file.
-        identificador (str): Identifier for the file name.
+        identifier (str): Identifier for the file name.
     """
     # Create directory if it does not exist
     if not os.path.exists(path_save):
         os.makedirs(path_save)
 
-    nome_arquivo_xlsx = f"{identificador}_resultados.xlsx"
-    caminho_arquivo = os.path.join(path_save, nome_arquivo_xlsx)
+    output_xlsx_name = f"{identifier}_resultados.xlsx"
+    output_path = os.path.join(path_save, output_xlsx_name)
 
-    with pd.ExcelWriter(caminho_arquivo, engine='openpyxl') as writer:
+    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         # Use 'Naive' results keys to get metric names
-        for metrica in resultados['Naive'][0].keys():
-            df_metrica = pd.DataFrame({
-                'Naive': [resultados['Naive'][i][metrica] for i in range(len(resultados['Naive']))],
-                'Random forest': [resultados['Random forest'][i][metrica] for i in range(len(resultados['Random forest']))],
-                'KNN': [resultados['KNN'][i][metrica] for i in range(len(resultados['KNN']))],
-                'Logistica': [resultados['Logistica'][i][metrica] for i in range(len(resultados['Logistica']))],
-                'SVM': [resultados['SVM'][i][metrica] for i in range(len(resultados['SVM']))],
-                'Rede neural': [resultados['Rede neural'][i][metrica] for i in range(len(resultados['Rede neural']))],
-                'Xgboost': [resultados['Xgboost'][i][metrica] for i in range(len(resultados['Xgboost']))],
+        for metric in results['Naive'][0].keys():
+            df_metric = pd.DataFrame({
+                'Naive': [results['Naive'][i][metric] for i in range(len(results['Naive']))],
+                'Random forest': [results['Random forest'][i][metric] for i in range(len(results['Random forest']))],
+                'KNN': [results['KNN'][i][metric] for i in range(len(results['KNN']))],
+                'Logistic Regression': [results['Logistic Regression'][i][metric] for i in range(len(results['Logistic Regression']))],
+                'SVM': [results['SVM'][i][metric] for i in range(len(results['SVM']))],
+                'Neural network': [results['Neural network'][i][metric] for i in range(len(results['Neural network']))],
+                'Xgboost': [results['Xgboost'][i][metric] for i in range(len(results['Xgboost']))],
             })
-            df_metrica.to_excel(writer, sheet_name=metrica, index=False)
+            df_metric.to_excel(writer, sheet_name=metric, index=False)
 
-def extrair_params_dict(linha):
+def extract_params_dict(line):
     """
     Extracts hyperparameters dictionary from a CSV line string.
 
     Args:
-        linha (str): String line from CSV.
+        line (str): String line from CSV.
 
     Returns:
         dict: Hyperparameters as dictionary.
     """
     # Split the line by comma
-    elementos = linha.split(',')
+    elements = line.split(',')
 
     # Join back from the 3rd element and strip extra quotes
-    params_str = ','.join(elementos[2:]).strip('""')
+    params_str = ','.join(elements[2:]).strip('""')
 
     # Safely evaluate string as Python dict
     params_dict = ast.literal_eval(params_str)
     
     return params_dict
 
-def extrair_params_dict_correto(linha):
+def extract_params_dict_correct(line):
     """
     Alternative method to extract hyperparameters dictionary from string.
 
     Args:
-        linha (str): String representing dictionary.
+        line (str): String representing dictionary.
 
     Returns:
         dict: Hyperparameters dictionary.
     """
-    params_dict = ast.literal_eval(linha)
+    params_dict = ast.literal_eval(line)
     
     return params_dict
 
-def calcular_medias_metricas(dicts):
+def compute_metric_means(dicts):
     """
     Calculates mean of each metric from a list of dictionaries, ignoring NaN values.
 
@@ -139,62 +139,62 @@ def calcular_medias_metricas(dicts):
         return media_dict
 
     # Compute mean per metric ignoring NaNs
-    for metrica in dicts[0]:
-        valores = [d[metrica] for d in dicts if not math.isnan(d[metrica])]
-        if valores:
-            media_dict[metrica] = sum(valores) / len(valores)
+    for metric in dicts[0]:
+        values = [d[metric] for d in dicts if not math.isnan(d[metric])]
+        if values:
+            media_dict[metric] = sum(values) / len(values)
         else:
-            media_dict[metrica] = float('nan')
+            media_dict[metric] = float('nan')
 
     return media_dict
 
-def salvar_resultados_em_xlsx(resultados, path_save):
+def save_results_to_xlsx(results, path_save):
     """
     Save aggregated results to an XLSX file, each sheet is a dataset identifier.
 
     Args:
-        resultados (dict): Dictionary with results per identifier.
+        results (dict): Dictionary with results per identifier.
         path_save (str): Path to save the file.
     """
     with pd.ExcelWriter(path_save, engine='openpyxl') as writer:
-        for identificador, data in resultados.items():
+        for identifier, data in results.items():
             df = pd.DataFrame([data])
-            df.to_excel(writer, sheet_name=identificador, index=False)
+            df.to_excel(writer, sheet_name=identifier, index=False)
 
-def processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest,
-                                  resultados_knn, resultados_logistica, resultados_svm,
-                                  resultados_rede_neural, resultados_xgboost, identificador):
+def aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest,
+                               resultados_knn, resultados_logistica, resultados_svm,
+                               resultados_rede_neural, resultados_xgboost, identifier):
     """
     Aggregate results from each algorithm, save means and raw results.
 
     Args:
         path_save (str): Folder path to save results.
         resultados_* (list): List of metric dicts per algorithm.
-        identificador (str): Dataset identifier.
+        identifier (str): Dataset identifier.
     """
-    resultados_dict = {
+    results_dict = {
         'Naive': resultados_naive,
         'Random forest': resultados_random_forest,
         'KNN': resultados_knn,
-        'Logistica': resultados_logistica,
+        'Logistic Regression': resultados_logistica,
         'SVM': resultados_svm,
-        'Rede neural': resultados_rede_neural,
+        'Neural network': resultados_rede_neural,
         'Xgboost': resultados_xgboost
     }
 
     # Calculate mean metrics for each algorithm
-    media_resultados = {algoritmo: calcular_medias_metricas(resultados) for algoritmo, resultados in resultados_dict.items()}
+    mean_results = {algo: compute_metric_means(res) for algo, res in results_dict.items()}
 
-    nome_arquivo_xlsx = f"{identificador}_medias.xlsx"
-    caminho_arquivo = os.path.join(path_save, nome_arquivo_xlsx)
-    salvar_resultados_em_xlsx(media_resultados, caminho_arquivo)
+    output_xlsx_name = f"{identifier}_medias.xlsx"
+    output_path = os.path.join(path_save, output_xlsx_name)
+    save_results_to_xlsx(mean_results, output_path)
     
     # Save the raw detailed results separately
-    salvar_resultados_brutos_em_xlsx(resultados_dict, path_save, identificador)
+    save_raw_results_to_xlsx(results_dict, path_save, identifier)
 
 
-def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenho_campo=2, oversample=False,
-                          normal=False, metade=False, n_splits_kfold=3, run_knn_only=False):
+def run_cross_validation(path_data, path_param, path_save, n_clusters_Desempenho_campo=2, oversample=False,
+                        normal=False, metade=False, n_splits_kfold=3, run_knn_only=False):
     """
     Main function to load datasets and parameters, run cross-validation, and save results.
 
@@ -228,7 +228,7 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
     for i, (path, paths_params) in enumerate(zip(paths, paths_param)):
         
         # Extract dataset identifier: 'gf', 'gs', etc.
-        identificador = path.split('_')[-1].split('.')[0]
+        identifier = path.split('_')[-1].split('.')[0]
         
         # Load dataset (training + test sets concatenated)
         with open(path, 'rb') as f:
@@ -278,11 +278,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
                 # KNN Classifier Pipeline
                 ######################################################################################
                 try:
-                    parametros = extrair_params_dict(best_param.iloc[2,0])
+                    params = extract_params_dict(best_param.iloc[2,0])
                 except:
-                    parametros = extrair_params_dict_correto(best_param.iloc[2,2])
+                    params = extract_params_dict_correct(best_param.iloc[2,2])
                 
-                knn = KNeighborsClassifier(**parametros)
+                knn = KNeighborsClassifier(**params)
                 
                 if oversample:
                     pipeline = Pipeline([
@@ -310,20 +310,20 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
                 resultados_knn.append({metric: np.mean(scores['test_' + metric]) for metric in scoring})
             
                 # Save results and exit early since only KNN was requested
-                if identificador == 'gf':
-                    processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+                if identifier == 'gf':
+                    aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                                   resultados_logistica, resultados_svm, resultados_rede_neural,
                                                   resultados_xgboost, 'gf')
-                if identificador == 'gs':
-                    processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+                if identifier == 'gs':
+                    aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                                   resultados_logistica, resultados_svm, resultados_rede_neural,
                                                   resultados_xgboost, 'gs')
-                if identificador == 'gc':
-                    processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+                if identifier == 'gc':
+                    aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                                   resultados_logistica, resultados_svm, resultados_rede_neural,
                                                   resultados_xgboost, 'gc')
-                if identificador == 'sg':
-                    processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+                if identifier == 'sg':
+                    aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                                   resultados_logistica, resultados_svm, resultados_rede_neural,
                                                   resultados_xgboost, 'sg')
                 return()
@@ -362,11 +362,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # Random Forest Classifier Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[1,0])
+                params = extract_params_dict(best_param.iloc[1,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[1,2])
+                params = extract_params_dict_correct(best_param.iloc[1,2])
             
-            random_forest = RandomForestClassifier(**parametros)
+            random_forest = RandomForestClassifier(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -396,11 +396,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # KNN Classifier Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[2,0])
+                params = extract_params_dict(best_param.iloc[2,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[2,2])
+                params = extract_params_dict_correct(best_param.iloc[2,2])
             
-            knn = KNeighborsClassifier(**parametros)
+            knn = KNeighborsClassifier(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -430,11 +430,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # Logistic Regression Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[3,0])
+                params = extract_params_dict(best_param.iloc[3,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[3,2])
+                params = extract_params_dict_correct(best_param.iloc[3,2])
             
-            logistica = LogisticRegression(**parametros)
+            logistica = LogisticRegression(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -464,11 +464,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # Support Vector Machine Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[4,0])
+                params = extract_params_dict(best_param.iloc[4,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[4,2])
+                params = extract_params_dict_correct(best_param.iloc[4,2])
             
-            svm = SVC(**parametros)
+            svm = SVC(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -498,11 +498,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # Neural Network (MLPClassifier) Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[5,0])
+                params = extract_params_dict(best_param.iloc[5,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[5,2])
+                params = extract_params_dict_correct(best_param.iloc[5,2])
             
-            rede_neural = MLPClassifier(**parametros)
+            rede_neural = MLPClassifier(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -532,11 +532,11 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             # XGBoost Classifier Pipeline
             ######################################################################################
             try:
-                parametros = extrair_params_dict(best_param.iloc[6,0])
+                params = extract_params_dict(best_param.iloc[6,0])
             except:
-                parametros = extrair_params_dict_correto(best_param.iloc[6,2])
+                params = extract_params_dict_correct(best_param.iloc[6,2])
             
-            Xgboost = XGBClassifier(**parametros)
+            Xgboost = XGBClassifier(**params)
             
             if oversample:
                 pipeline = Pipeline([
@@ -563,30 +563,30 @@ def run_validacao_cruzada(path_data, path_param, path_save, n_clusters_Desempenh
             resultados_xgboost.append({metric: np.mean(scores['test_' + metric]) for metric in scoring})
           
         # Save aggregated results after all folds for each dataset identifier
-        if identificador == 'gf':
-            processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+        if identifier == 'gf':
+            aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                           resultados_logistica, resultados_svm, resultados_rede_neural,
                                           resultados_xgboost, 'gf')
                 
-        if identificador == 'gs':
-            processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+        if identifier == 'gs':
+            aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                           resultados_logistica, resultados_svm, resultados_rede_neural,
                                           resultados_xgboost, 'gs')
                 
-        if identificador == 'gc':
-            processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+        if identifier == 'gc':
+            aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                           resultados_logistica, resultados_svm, resultados_rede_neural,
                                           resultados_xgboost, 'gc')
                       
-        if identificador == 'sg':
-            processar_e_salvar_resultados(path_save, resultados_naive, resultados_random_forest, resultados_knn,
+        if identifier == 'sg':
+            aggregate_and_save_results(path_save, resultados_naive, resultados_random_forest, resultados_knn,
                                           resultados_logistica, resultados_svm, resultados_rede_neural,
                                           resultados_xgboost, 'sg')
 
 if __name__ == "__main__":
 
     # Run the main cross-validation pipeline with specified parameters
-    run_validacao_cruzada(
+    run_cross_validation(
         path_data='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)',
         path_param='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)',
         path_save='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)\\resultados_ml',

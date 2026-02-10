@@ -38,7 +38,7 @@ Inputs:
 -------
 - path_data: Directory containing `.pkl` datasets (gf, gs, gc, sg variants)
 - path_save: Directory to save results CSV
-- n_clusters_Desempenho_campo: Number of clusters used for labeling
+- n_clusters_Desempenho_campo: Number of clusters used for labeling (field performance)
 - oversample: Whether to apply SMOTE balancing
 - n_splits_kfold: Number of folds in StratifiedKFold
 
@@ -79,7 +79,7 @@ def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_c
              os.path.join(path_data, 'cogfut_sg.pkl')]
     
     for i, path in enumerate(paths):
-        identificador = path.split('_')[-1].split('.')[0]  # Extracting identifier (gf, gs, gc, sg)
+        identifier = path.split('_')[-1].split('.')[0]  # Extracting identifier (gf, gs, gc, sg)
         
         with open(path, 'rb') as f:
             X_cog_treinamento, y_campo_treinamento, X_cog_teste, y_campo_teste = pickle.load(f)
@@ -91,60 +91,60 @@ def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_c
         # === Classifiers Selection ===
         if naive:
             ml_algorithm = GaussianNB()
-            parametros = {}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
+            params = {}
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
         
         if randomforest:
             ml_algorithm = RandomForestClassifier()
-            parametros = {'criterion': ['gini', 'entropy'],
+            params = {'criterion': ['gini', 'entropy'],
                           'n_estimators': [10, 40, 100, 150],
                           'min_samples_split': [2, 5, 10],
                           'min_samples_leaf': [1, 5, 10]}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
             
         if knn:
             ml_algorithm = KNeighborsClassifier()
-            parametros = {'n_neighbors': [1, 2, 3, 5, 10, 20],
+            params = {'n_neighbors': [1, 2, 3, 5, 10, 20],
                           'p': [1, 2]}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
             
         if Logistic_Regression:
             ml_algorithm = LogisticRegression()
-            parametros = {'tol': [0.01, 0.001, 0.0001],
+            params = {'tol': [0.01, 0.001, 0.0001],
                           'C': [1.0, 1.5, 2.0],
                           'solver': ['lbfgs', 'sag', 'saga']}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
         
         if SVM:
             ml_algorithm = SVC()
-            parametros = {'tol': [0.001, 0.0001, 0.00001],
+            params = {'tol': [0.001, 0.0001, 0.00001],
                           'C': [1.0, 1.5, 2.0],
                           'kernel': ['rbf', 'linear', 'poly', 'sigmoid']}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
         
         if MLP:
             ml_algorithm = MLPClassifier()
-            parametros = {'max_iter': [100, 500, 1000, 1500],
+            params = {'max_iter': [100, 500, 1000, 1500],
                           'activation': ['relu', 'logistic', 'tanh'],
                           'solver': ['adam', 'sgd'],
                           'hidden_layer_sizes': [(5,5), (10,10), (25,25), (50,50)],
                           'random_state': [0]}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
-            print('Grid Search Complete:', identificador)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
+            print('Grid Search Complete:', identifier)
 
         if XGboost:
             ml_algorithm = XGBClassifier()
-            parametros = {'max_depth': [4, 6, 8],
+            params = {'max_depth': [4, 6, 8],
                           'learning_rate': [0.05, 0.1, 0.15],
                           'n_estimators': [100, 200],
                           'min_child_weight': [1, 5]}
-            grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold)
-            print('Grid Search Complete:', identificador)
+            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
+            print('Grid Search Complete:', identifier)
 
 # -------------------------------
 # Grid Search Execution per Algorithm
 # -------------------------------
-def grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_save, oversample, n_splits_kfold):
+def grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold):
     kfold = StratifiedKFold(n_splits=n_splits_kfold, shuffle=True, random_state=0)
     os.makedirs(path_save, exist_ok=True)
     
@@ -157,39 +157,39 @@ def grid_search(ml_algorithm, parametros, X_cog, y_campo, identificador, path_sa
         steps = [('scaler', StandardScaler()), ('clf', ml_algorithm)]
 
     pipeline = Pipeline(steps)
-    parametros = {f'clf__{k}': v for k, v in parametros.items()}
+    param_grid = {f'clf__{k}': v for k, v in params.items()}
 
-    grid_search = GridSearchCV(estimator=pipeline, cv=kfold, param_grid=parametros,
+    grid_search = GridSearchCV(estimator=pipeline, cv=kfold, param_grid=param_grid,
                                scoring='balanced_accuracy', refit='f1_macro')
     
     grid_search.fit(X_cog, y_campo)
-    melhores_parametros = grid_search.best_params_
-    melhor_resultado = grid_search.best_score_
+    best_params = grid_search.best_params_
+    best_score = grid_search.best_score_
     
-    print(f"{ml_algorithm.__class__.__name__} - Best Params: {melhores_parametros}")
-    print(f"{ml_algorithm.__class__.__name__} - Best Balanced Accuracy: {melhor_resultado}")
+    print(f"{ml_algorithm.__class__.__name__} - Best Params: {best_params}")
+    print(f"{ml_algorithm.__class__.__name__} - Best Balanced Accuracy: {best_score}")
     
     # Save Best Params to CSV
-    nome_arquivo_csv = f"{identificador}_parametros.csv"
-    caminho_arquivo = os.path.join(path_save, nome_arquivo_csv)
+    output_csv_name = f"{identifier}_parametros.csv"
+    output_path = os.path.join(path_save, output_csv_name)
     
-    melhores_parametros = {k.replace('clf__', ''): v for k, v in melhores_parametros.items()}
+    best_params = {k.replace('clf__', ''): v for k, v in best_params.items()}
     
-    linha_nova = [ml_algorithm.__class__.__name__, melhor_resultado, melhores_parametros]
+    new_row = [ml_algorithm.__class__.__name__, best_score, best_params]
     
-    if os.path.isfile(caminho_arquivo):
-        df = pd.read_csv(caminho_arquivo)
-        df_existing = df[df['Nome do Algoritmo'] == ml_algorithm.__class__.__name__]
+    if os.path.isfile(output_path):
+        df = pd.read_csv(output_path)
+        df_existing = df[df['Algorithm Name'] == ml_algorithm.__class__.__name__]
         
         if not df_existing.empty:
-            df.loc[df['Nome do Algoritmo'] == ml_algorithm.__class__.__name__, 
-                   ['Melhor Resultado', 'Melhores Parametros']] = melhor_resultado, melhores_parametros
+            df.loc[df['Algorithm Name'] == ml_algorithm.__class__.__name__, 
+                   ['Best Score', 'Best Params']] = best_score, best_params
         else:
-            df = pd.concat([df, pd.DataFrame([linha_nova], columns=df.columns)], ignore_index=True)
+            df = pd.concat([df, pd.DataFrame([new_row], columns=df.columns)], ignore_index=True)
     else:
-        df = pd.DataFrame([linha_nova], columns=['Nome do Algoritmo', 'Melhor Resultado', 'Melhores Parametros'])
+        df = pd.DataFrame([new_row], columns=['Algorithm Name', 'Best Score', 'Best Params'])
     
-    df.to_csv(caminho_arquivo, index=False)
+    df.to_csv(output_path, index=False)
 
 # -------------------------------
 # Main Execution

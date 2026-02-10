@@ -190,9 +190,9 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
 
         # Adjust class labels display order for 'gs' identifier
         if identifier == 'gs':
-            class_labels = ["Superior", "Inferior"]
+            class_labels = ["High", "Low"]
         else:
-            class_labels = ["Inferior", "Superior"]
+            class_labels = ["Low", "High"]
 
         # Plot Confusion Matrix
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_labels)
