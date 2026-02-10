@@ -139,4 +139,3 @@ with pd.ExcelWriter(output_path) as writer:
         posthoc_df.to_excel(writer, sheet_name=f'{sheet_name}_posthoc', index=False)
 
 print(f"[OK] Kruskal-Wallis and Dunn's post-hoc results saved to {output_path}")
-

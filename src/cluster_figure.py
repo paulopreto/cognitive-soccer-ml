@@ -155,5 +155,3 @@ plot_vertical_clustered_with_violin(axs[1, 1], sg_data, 'saldo_gols', 'cluster',
 # Adjust layout to prevent overlap
 plt.tight_layout()
 plt.show()
-
-
