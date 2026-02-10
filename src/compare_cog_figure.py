@@ -213,4 +213,3 @@ filename = os.path.join(save_folder, 'comparacoes_todas_juntas.png')
 fig.savefig(filename, dpi=300, bbox_inches='tight')
 plt.show()
 print(f"\n[Image saved at: {filename}]")
-

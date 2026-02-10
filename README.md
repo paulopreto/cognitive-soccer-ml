@@ -54,7 +54,7 @@ To run only the training step: `uv run python -m src.train_final_models`. To run
 | `src/plot_best_models.py` | Plots best balanced accuracy by cognitive combination. |
 | `src/loo_validation.py` | Leave-one-out validation and confusion matrices. |
 
-Other scripts in `src/` (e.g. `Cluster_figure.py`, `Compare_cog_figure.py`, `NestedCV_confusion_matrix.py`, `Generate_MLmodels_reports.py`, `Statistics_top3_models.py`) support additional figures and reports. Paths use `pathlib` for cross-platform compatibility (macOS, Windows, Linux).
+Other scripts in `src/` (e.g. `cluster_figure.py`, `compare_cog_figure.py`, `nested_cv_confusion_matrix.py`, `generate_ml_models_reports.py`, `statistics_top3_models.py`) support additional figures and reports. Paths use `pathlib` for cross-platform compatibility (macOS, Windows, Linux).
 
 ## Data Access
 

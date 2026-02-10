@@ -175,4 +175,3 @@ if __name__ == "__main__":
 
     # Extract means and std deviations, consolidate and save
     extrair_salvar_medias(path_dir_combinacoes)
-
