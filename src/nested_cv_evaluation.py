@@ -49,6 +49,7 @@ import pandas as pd
 import os
 import csv
 import ast
+from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
@@ -67,14 +68,11 @@ def save_raw_results_to_xlsx(results, path_save, identifier):
         path_save (str): Path where to save the XLSX file.
         identifier (str): Identifier for the file name.
     """
-    # Create directory if it does not exist
-    if not os.path.exists(path_save):
-        os.makedirs(path_save)
+    path_save = Path(path_save)
+    path_save.mkdir(parents=True, exist_ok=True)
+    output_path = path_save / f"{identifier}_resultados.xlsx"
 
-    output_xlsx_name = f"{identifier}_resultados.xlsx"
-    output_path = os.path.join(path_save, output_xlsx_name)
-
-    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+    with pd.ExcelWriter(str(output_path), engine="openpyxl") as writer:
         # Use 'Naive' results keys to get metric names
         for metric in results['Naive'][0].keys():
             df_metric = pd.DataFrame({
@@ -184,19 +182,23 @@ def aggregate_and_save_results(path_save, resultados_naive, resultados_random_fo
 
     # Calculate mean metrics for each algorithm
     mean_results = {algo: compute_metric_means(res) for algo, res in results_dict.items()}
+    path_save = Path(path_save)
+    output_path = path_save / f"{identifier}_medias.xlsx"
+    save_results_to_xlsx(mean_results, str(output_path))
 
-    output_xlsx_name = f"{identifier}_medias.xlsx"
-    output_path = os.path.join(path_save, output_xlsx_name)
-    save_results_to_xlsx(mean_results, output_path)
-    
     # Save the raw detailed results separately
-    save_raw_results_to_xlsx(results_dict, path_save, identifier)
+    save_raw_results_to_xlsx(results_dict, str(path_save), identifier)
 
 
 def run_cross_validation(path_data, path_param, path_save, n_clusters_Desempenho_campo=2, oversample=False,
                         normal=False, metade=False, n_splits_kfold=3, run_knn_only=False):
     """
     Main function to load datasets and parameters, run cross-validation, and save results.
+
+    Nested Cross-Validation is used here for small sample size mitigation: with limited
+    data (e.g. N=44), a single train/test split or standard CV can yield optimistic
+    performance estimates. Stratified K-Fold CV with multiple iterations provides a
+    more stable and unbiased estimate of generalization performance.
 
     Args:
         path_data (str): Folder path with dataset pickles.
@@ -209,29 +211,30 @@ def run_cross_validation(path_data, path_param, path_save, n_clusters_Desempenho
         n_splits_kfold (int): Number of CV folds.
         run_knn_only (bool): If True, only run KNN classifier.
     """
+    path_data = Path(path_data)
+    path_param = Path(path_param)
+    path_save = Path(path_save)
+    path_save.mkdir(parents=True, exist_ok=True)
 
     # Paths for each dataset variant
-    paths = [os.path.join(path_data, 'cogfut_gf.pkl'),
-             os.path.join(path_data, 'cogfut_gs.pkl'),
-             os.path.join(path_data, 'cogfut_gc.pkl'),
-             os.path.join(path_data, 'cogfut_sg.pkl')]
-    
-    paths_param = [os.path.join(path_param,'gf_parametros.csv'),
-                   os.path.join(path_param,'gs_parametros.csv'),
-                   os.path.join(path_param,'gc_parametros.csv'),
-                   os.path.join(path_param,'sg_parametros.csv')]
-    
-    # Create save directory if missing
-    if not os.path.exists(path_save):
-        os.makedirs(path_save)
-        
-    for i, (path, paths_params) in enumerate(zip(paths, paths_param)):
-        
-        # Extract dataset identifier: 'gf', 'gs', etc.
-        identifier = path.split('_')[-1].split('.')[0]
-        
+    paths = [
+        path_data / "cogfut_gf.pkl",
+        path_data / "cogfut_gs.pkl",
+        path_data / "cogfut_gc.pkl",
+        path_data / "cogfut_sg.pkl",
+    ]
+    paths_param = [
+        path_param / "gf_parametros.csv",
+        path_param / "gs_parametros.csv",
+        path_param / "gc_parametros.csv",
+        path_param / "sg_parametros.csv",
+    ]
+
+    for path, path_params in zip(paths, paths_param):
+        identifier = path.stem.split("_")[-1]  # e.g. cogfut_gf -> gf
+
         # Load dataset (training + test sets concatenated)
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             X_cog_treinamento, y_campo_treinamento, X_cog_teste, y_campo_teste = pickle.load(f)
     
         X_cog = np.concatenate((X_cog_treinamento, X_cog_teste), axis=0)
@@ -247,7 +250,7 @@ def run_cross_validation(path_data, path_param, path_save, n_clusters_Desempenho
         resultados_xgboost = []
         
         # Load best hyperparameters from CSV
-        best_param = pd.read_csv(paths_params, sep=',')
+        best_param = pd.read_csv(path_params, sep=",")
         
         # Define scoring metrics for cross-validation
         scoring = {

@@ -35,9 +35,9 @@ Special Considerations:
 -------------------------------------------------------------------------------
 """
 
-import os
-import pickle
 import csv
+import pickle
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import LeaveOneOut
@@ -119,7 +119,8 @@ def run_all_LOO_matrices(datasets_info, algorithm_name, path_save_img_final):
         identifier = info['identificador']
 
         # Load dataset (train/test splits) from .pkl file
-        with open(os.path.join(path_data, f"cogfut_{identifier}.pkl"), 'rb') as f:
+        path_data = Path(path_data)
+        with open(path_data / f"cogfut_{identifier}.pkl", "rb") as f:
             X_train, y_train, X_test, y_test = pickle.load(f)
 
         # Concatenate train and test splits for full data LOO evaluation
@@ -133,7 +134,8 @@ def run_all_LOO_matrices(datasets_info, algorithm_name, path_save_img_final):
             model_name_to_use = algorithm_name
 
         # Load best hyperparameters for current dataset and algorithm
-        best_params = load_best_params(os.path.join(path_csv, f"{identifier}_parametros.csv"), model_name_to_use)
+        path_csv_p = Path(path_csv)
+        best_params = load_best_params(path_csv_p / f"{identifier}_parametros.csv", model_name_to_use)
         model = get_model_by_name(model_name_to_use, best_params)
 
         # Build preprocessing and classification pipeline
@@ -197,10 +199,10 @@ def run_all_LOO_matrices(datasets_info, algorithm_name, path_save_img_final):
     plt.tight_layout()
 
     # Ensure target directory exists and save the final figure
-    if not os.path.exists(path_save_img_final):
-        os.makedirs(path_save_img_final)
-    full_path = os.path.join(path_save_img_final, f"confusion_matrices_LOO_{algorithm_name}.png")
-    plt.savefig(full_path, dpi=300)
+    path_save_img_final = Path(path_save_img_final)
+    path_save_img_final.mkdir(parents=True, exist_ok=True)
+    full_path = path_save_img_final / f"confusion_matrices_LOO_{algorithm_name}.png"
+    plt.savefig(str(full_path), dpi=300)
     plt.show()
     print(f"[OK] Final figure saved: {full_path}")
 

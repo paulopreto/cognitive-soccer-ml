@@ -60,10 +60,11 @@ from sklearn.preprocessing import StandardScaler
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 import pickle
+import csv
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import os
-import csv
 
 # -------------------------------
 # Function to Run Grid Search per Algorithm and Dataset
@@ -71,17 +72,21 @@ import csv
 def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_campo=2,
                    naive=False, randomforest=False, knn=False, Logistic_Regression=False,
                    SVM=False, MLP=False, XGboost=False, oversample=False, normal=False, metade=False):
-    
+    path_data = Path(path_data)
+    path_save = Path(path_save)
+
     # Define dataset file paths (4 targets)
-    paths = [os.path.join(path_data, 'cogfut_gf.pkl'),
-             os.path.join(path_data, 'cogfut_gs.pkl'),
-             os.path.join(path_data, 'cogfut_gc.pkl'),
-             os.path.join(path_data, 'cogfut_sg.pkl')]
-    
-    for i, path in enumerate(paths):
-        identifier = path.split('_')[-1].split('.')[0]  # Extracting identifier (gf, gs, gc, sg)
-        
-        with open(path, 'rb') as f:
+    paths = [
+        path_data / "cogfut_gf.pkl",
+        path_data / "cogfut_gs.pkl",
+        path_data / "cogfut_gc.pkl",
+        path_data / "cogfut_sg.pkl",
+    ]
+
+    for p in paths:
+        identifier = p.stem.split("_")[-1]  # e.g. cogfut_gf -> gf
+
+        with open(p, "rb") as f:
             X_cog_treinamento, y_campo_treinamento, X_cog_teste, y_campo_teste = pickle.load(f)
     
         # Concatenate train and test data for cross-validation
@@ -145,8 +150,9 @@ def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_c
 # Grid Search Execution per Algorithm
 # -------------------------------
 def grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold):
+    path_save = Path(path_save)
+    path_save.mkdir(parents=True, exist_ok=True)
     kfold = StratifiedKFold(n_splits=n_splits_kfold, shuffle=True, random_state=0)
-    os.makedirs(path_save, exist_ok=True)
     
     # Define Pipeline Steps
     if oversample:
@@ -170,14 +176,11 @@ def grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, ove
     print(f"{ml_algorithm.__class__.__name__} - Best Balanced Accuracy: {best_score}")
     
     # Save Best Params to CSV
-    output_csv_name = f"{identifier}_parametros.csv"
-    output_path = os.path.join(path_save, output_csv_name)
-    
+    output_path = path_save / f"{identifier}_parametros.csv"
     best_params = {k.replace('clf__', ''): v for k, v in best_params.items()}
-    
     new_row = [ml_algorithm.__class__.__name__, best_score, best_params]
-    
-    if os.path.isfile(output_path):
+
+    if output_path.is_file():
         df = pd.read_csv(output_path)
         df_existing = df[df['Algorithm Name'] == ml_algorithm.__class__.__name__]
         
@@ -189,7 +192,7 @@ def grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, ove
     else:
         df = pd.DataFrame([new_row], columns=['Algorithm Name', 'Best Score', 'Best Params'])
     
-    df.to_csv(output_path, index=False)
+    df.to_csv(str(output_path), index=False)
 
 # -------------------------------
 # Main Execution

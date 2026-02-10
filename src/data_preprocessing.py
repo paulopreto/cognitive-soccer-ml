@@ -51,7 +51,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 from imblearn.over_sampling import SMOTE
 from scipy import stats
-import os
+from pathlib import Path
 from itertools import combinations
 
 # -------------------------------
@@ -147,6 +147,8 @@ def reorganizar_labels(dados, n_clusters):
 # Main Execution Function for Dataset Preparation
 # -------------------------------
 def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False, normal=False, metade=False, colunas_func_cog=None):
+    path_to_data = Path(path_to_data)
+    path_save = Path(path_save)
     full_data = pd.read_csv(path_to_data)
 
     # Select Cognitive Variables
@@ -163,14 +165,14 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
     Y_gc = kmeans_cluster_teams(Y_campo[['gols_companheiros']], n_clusters_Desempenho_campo).reset_index(drop=True)
     Y_sg = kmeans_cluster_teams(Y_campo[['saldo_gols']], n_clusters_Desempenho_campo).reset_index(drop=True)
 
-    os.makedirs(path_save, exist_ok=True)
+    path_save.mkdir(parents=True, exist_ok=True)
 
     # Save Datasets (Oversample Scenario)
     if oversample:
         datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
         for name, Y in datasets:
             X_train, X_test, y_train, y_test = train_test_split(X_cognitivo, Y, test_size=0.25, random_state=0)
-            with open(os.path.join(path_save, f'cogfut_{name}.pkl'), 'wb') as f:
+            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
                 pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
         return()
 
@@ -179,7 +181,7 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
         datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
         for name, Y in datasets:
             X_train, X_test, y_train, y_test = train_test_split(X_cognitivo, Y, test_size=0.25, random_state=0)
-            with open(os.path.join(path_save, f'cogfut_{name}.pkl'), 'wb') as f:
+            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
                 pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
 
     # Save Datasets (Metade Scenario)
@@ -192,7 +194,7 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
         datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
         for name, Y in datasets:
             X_train, X_test, y_train, y_test = train_test_split(X_cognitivo_norm, Y, test_size=0.25, random_state=0)
-            with open(os.path.join(path_save, f'cogfut_{name}.pkl'), 'wb') as f:
+            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
                 pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
 
 # -------------------------------
@@ -201,18 +203,16 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
 if __name__ == "__main__":
     colunas_func_cog = ['Memory span', 'Acuracia Go', 'Acuracia nogo', 'Capacidade de rastreamento', 'Flexibilidade cognitiva (B-A)']
     combinations_list = generate_combinations(colunas_func_cog)
-    path_base_save = 'D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets2'
+    path_base_save = Path('D:/Processamento_mestrado_Sports_Science/final_analysis/data/ML_datasets2')
 
     for combinacao in combinations_list:
         combinacao_str = '_'.join([col.replace(' ', '_') for col in combinacao])
-        path_save = os.path.join(path_base_save, combinacao_str)
+        path_save = path_base_save / combinacao_str
 
-        run(path_to_data='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\dataset_completo.csv',
+        run(path_to_data=Path('D:/Processamento_mestrado_Sports_Science/final_analysis/data/dataset_completo.csv'),
             path_save=path_save,
             n_clusters_Desempenho_campo=2,
             oversample=False,
             normal=True,
             metade=False,
             colunas_func_cog=list(combinacao))
-
-    

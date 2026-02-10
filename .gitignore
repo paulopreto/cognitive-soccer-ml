@@ -427,10 +427,10 @@ env/
 .env/
 ENV/
 
-# uv (cache; uv.lock é versionado para builds reproduzíveis)
+# uv (cache; uv.lock is versioned for reproducible builds)
 .uv/
 
-# Bytecode e caches
+# Bytecode and caches
 *.py[cod]
 *$py.class
 *.so
@@ -443,7 +443,7 @@ build/
 *.manifest
 *.spec
 
-# Testes e cobertura
+# Tests and coverage
 .pytest_cache/
 .coverage
 .coverage.*
@@ -451,7 +451,7 @@ htmlcov/
 .tox/
 .nox/
 
-# Type checkers e linters
+# Type checkers and linters
 .mypy_cache/
 .dmypy.json
 .dmypy.json
@@ -460,4 +460,4 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
-# ( .python-version é versionado para uv/pyenv usar 3.12.12 )
+# ( .python-version is versioned for uv/pyenv to use 3.12.12 )

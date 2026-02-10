@@ -54,4 +54,4 @@ print('OK — environment is working.')
 "
 
 echo ""
-echo "Done. Use: source .venv/bin/activate   or   uv run python src/Complete_trainning.py"
+echo "Done. Use: source .venv/bin/activate   or   uv run python run_pipeline.py"

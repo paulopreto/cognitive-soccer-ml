@@ -31,10 +31,11 @@ Outputs:
 -------------------------------------------------------------------------------
 """
 
+from pathlib import Path
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 
 def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
                            ylabel="Balanced accuracy (%)", 
@@ -82,8 +83,10 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
             v = v.replace(k, v_abbr)
         return v
 
-    balanced_accuracy["variaveis"] = balanced_accuracy["variaveis"].apply(translate_variable)
-    balanced_accuracy["variaveis"] = balanced_accuracy["variaveis"].str.replace("_", "-", regex=False)
+    # Support both 'variables' and 'variaveis' column names for backward compatibility
+    col_var = "variables" if "variables" in balanced_accuracy.columns else "variaveis"
+    balanced_accuracy[col_var] = balanced_accuracy[col_var].apply(translate_variable)
+    balanced_accuracy[col_var] = balanced_accuracy[col_var].str.replace("_", "-", regex=False)
 
     # Sort the data by balanced accuracy values for better visual distribution
     balanced_accuracy = balanced_accuracy.sort_values(by="Max Value")
@@ -91,7 +94,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
     # Plot scatter points for each variable combination
     scatter = sns.scatterplot(
         data=balanced_accuracy,
-        x="variaveis",
+        x=col_var,
         y="Max Value",
         hue="Algorithms",
         palette=palette,
@@ -103,7 +106,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
 
     # Plot vertical error bars indicating standard deviation
     ax.errorbar(
-        balanced_accuracy["variaveis"],
+        balanced_accuracy[col_var],
         balanced_accuracy["Max Value"],
         yerr=balanced_accuracy["Standard Deviation"],
         fmt="none",
@@ -113,7 +116,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
     )
 
     # Adjust X-axis label formatting
-    ax.set_xticklabels(balanced_accuracy["variaveis"], rotation=30, ha='right', fontsize=9)
+    ax.set_xticklabels(balanced_accuracy[col_var], rotation=30, ha='right', fontsize=9)
 
     # Conditionally display X-axis label
     ax.set_xlabel("Cognitive functions combinations", fontsize=9 if show_xlabel else 0)
@@ -134,8 +137,8 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
 # Main Execution Block
 # -------------------
 
-# Define base directory containing results files
-base_path = "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\results_CV"
+# Define base directory containing results files (pathlib for cross-platform)
+base_path = Path("D:/Processamento_mestrado_Sports_Science/final_analysis/results_CV")
 
 # Target variable codes and corresponding subplot titles
 siglas = ['gf', 'gs', 'gc', 'sg']
@@ -166,8 +169,8 @@ all_handles = {}
 # Iterate over each target variable (sigla) and generate plots
 for i, sigla in enumerate(siglas):
     # Construct file paths for mean values and standard deviations
-    path_means = os.path.join(base_path, f"medias_{sigla}.xlsx")
-    path_stddevs = os.path.join(base_path, f"Dp_{sigla}.xlsx")
+    path_means = base_path / f"medias_{sigla}.xlsx"
+    path_stddevs = base_path / f"Dp_{sigla}.xlsx"
 
     # Read all sheets from Excel files into dictionaries
     xls_means = pd.ExcelFile(path_means)
