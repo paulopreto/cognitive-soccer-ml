@@ -6,7 +6,7 @@ Author: Rafael Luiz Martins Monteiro
 
 Description:
 -------------
-This script performs hyperparameter optimization using Grid Search with 
+This script performs hyperparameter optimization using Grid Search with
 Stratified K-Fold Cross-Validation for various classification algorithms.
 It loads pre-processed datasets (.pkl) generated from previous clustering pipelines,
 applies oversampling (SMOTE) if selected, standardizes the data, and trains classifiers.
@@ -60,18 +60,31 @@ from sklearn.preprocessing import StandardScaler
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 import pickle
-import csv
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+
 # -------------------------------
 # Function to Run Grid Search per Algorithm and Dataset
 # -------------------------------
-def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_campo=2,
-                   naive=False, randomforest=False, knn=False, Logistic_Regression=False,
-                   SVM=False, MLP=False, XGboost=False, oversample=False, normal=False, metade=False):
+def run_GridSearch(
+    path_data,
+    path_save,
+    n_splits_kfold,
+    n_clusters_Desempenho_campo=2,
+    naive=False,
+    randomforest=False,
+    knn=False,
+    Logistic_Regression=False,
+    SVM=False,
+    MLP=False,
+    XGboost=False,
+    oversample=False,
+    normal=False,
+    metade=False,
+):
     path_data = Path(path_data)
     path_save = Path(path_save)
 
@@ -87,127 +100,238 @@ def run_GridSearch(path_data, path_save, n_splits_kfold, n_clusters_Desempenho_c
         identifier = p.stem.split("_")[-1]  # e.g. cogfut_gf -> gf
 
         with open(p, "rb") as f:
-            X_cog_treinamento, y_campo_treinamento, X_cog_teste, y_campo_teste = pickle.load(f)
-    
+            X_cog_treinamento, y_campo_treinamento, X_cog_teste, y_campo_teste = (
+                pickle.load(f)
+            )
+
         # Concatenate train and test data for cross-validation
         X_cog = np.concatenate((X_cog_treinamento, X_cog_teste), axis=0)
         y_campo = np.concatenate((y_campo_treinamento, y_campo_teste), axis=0)
-        
+
         # === Classifiers Selection ===
         if naive:
             ml_algorithm = GaussianNB()
             params = {}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-        
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+
         if randomforest:
             ml_algorithm = RandomForestClassifier()
-            params = {'criterion': ['gini', 'entropy'],
-                          'n_estimators': [10, 40, 100, 150],
-                          'min_samples_split': [2, 5, 10],
-                          'min_samples_leaf': [1, 5, 10]}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-            
+            params = {
+                "criterion": ["gini", "entropy"],
+                "n_estimators": [10, 40, 100, 150],
+                "min_samples_split": [2, 5, 10],
+                "min_samples_leaf": [1, 5, 10],
+            }
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+
         if knn:
             ml_algorithm = KNeighborsClassifier()
-            params = {'n_neighbors': [1, 2, 3, 5, 10, 20],
-                          'p': [1, 2]}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-            
+            params = {"n_neighbors": [1, 2, 3, 5, 10, 20], "p": [1, 2]}
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+
         if Logistic_Regression:
             ml_algorithm = LogisticRegression()
-            params = {'tol': [0.01, 0.001, 0.0001],
-                          'C': [1.0, 1.5, 2.0],
-                          'solver': ['lbfgs', 'sag', 'saga']}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-        
+            params = {
+                "tol": [0.01, 0.001, 0.0001],
+                "C": [1.0, 1.5, 2.0],
+                "solver": ["lbfgs", "sag", "saga"],
+            }
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+
         if SVM:
             ml_algorithm = SVC()
-            params = {'tol': [0.001, 0.0001, 0.00001],
-                          'C': [1.0, 1.5, 2.0],
-                          'kernel': ['rbf', 'linear', 'poly', 'sigmoid']}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-        
+            params = {
+                "tol": [0.001, 0.0001, 0.00001],
+                "C": [1.0, 1.5, 2.0],
+                "kernel": ["rbf", "linear", "poly", "sigmoid"],
+            }
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+
         if MLP:
             ml_algorithm = MLPClassifier()
-            params = {'max_iter': [100, 500, 1000, 1500],
-                          'activation': ['relu', 'logistic', 'tanh'],
-                          'solver': ['adam', 'sgd'],
-                          'hidden_layer_sizes': [(5,5), (10,10), (25,25), (50,50)],
-                          'random_state': [0]}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-            print('Grid Search Complete:', identifier)
+            params = {
+                "max_iter": [100, 500, 1000, 1500],
+                "activation": ["relu", "logistic", "tanh"],
+                "solver": ["adam", "sgd"],
+                "hidden_layer_sizes": [(5, 5), (10, 10), (25, 25), (50, 50)],
+                "random_state": [0],
+            }
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+            print("Grid Search Complete:", identifier)
 
         if XGboost:
             ml_algorithm = XGBClassifier()
-            params = {'max_depth': [4, 6, 8],
-                          'learning_rate': [0.05, 0.1, 0.15],
-                          'n_estimators': [100, 200],
-                          'min_child_weight': [1, 5]}
-            grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold)
-            print('Grid Search Complete:', identifier)
+            params = {
+                "max_depth": [4, 6, 8],
+                "learning_rate": [0.05, 0.1, 0.15],
+                "n_estimators": [100, 200],
+                "min_child_weight": [1, 5],
+            }
+            grid_search(
+                ml_algorithm,
+                params,
+                X_cog,
+                y_campo,
+                identifier,
+                path_save,
+                oversample,
+                n_splits_kfold,
+            )
+            print("Grid Search Complete:", identifier)
+
 
 # -------------------------------
 # Grid Search Execution per Algorithm
 # -------------------------------
-def grid_search(ml_algorithm, params, X_cog, y_campo, identifier, path_save, oversample, n_splits_kfold):
+def grid_search(
+    ml_algorithm,
+    params,
+    X_cog,
+    y_campo,
+    identifier,
+    path_save,
+    oversample,
+    n_splits_kfold,
+):
     path_save = Path(path_save)
     path_save.mkdir(parents=True, exist_ok=True)
     kfold = StratifiedKFold(n_splits=n_splits_kfold, shuffle=True, random_state=0)
-    
+
     # Define Pipeline Steps
     if oversample:
-        steps = [('smote', SMOTE(sampling_strategy='minority', random_state=0)),
-                 ('scaler', StandardScaler()),
-                 ('clf', ml_algorithm)]
+        steps = [
+            ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
+            ("scaler", StandardScaler()),
+            ("clf", ml_algorithm),
+        ]
     else:
-        steps = [('scaler', StandardScaler()), ('clf', ml_algorithm)]
+        steps = [("scaler", StandardScaler()), ("clf", ml_algorithm)]
 
     pipeline = Pipeline(steps)
-    param_grid = {f'clf__{k}': v for k, v in params.items()}
+    param_grid = {f"clf__{k}": v for k, v in params.items()}
 
-    grid_search = GridSearchCV(estimator=pipeline, cv=kfold, param_grid=param_grid,
-                               scoring='balanced_accuracy', refit='f1_macro')
-    
+    grid_search = GridSearchCV(
+        estimator=pipeline,
+        cv=kfold,
+        param_grid=param_grid,
+        scoring="balanced_accuracy",
+        refit="f1_macro",
+    )
+
     grid_search.fit(X_cog, y_campo)
     best_params = grid_search.best_params_
     best_score = grid_search.best_score_
-    
+
     print(f"{ml_algorithm.__class__.__name__} - Best Params: {best_params}")
     print(f"{ml_algorithm.__class__.__name__} - Best Balanced Accuracy: {best_score}")
-    
+
     # Save Best Params to CSV
     output_path = path_save / f"{identifier}_parametros.csv"
-    best_params = {k.replace('clf__', ''): v for k, v in best_params.items()}
+    best_params = {k.replace("clf__", ""): v for k, v in best_params.items()}
     new_row = [ml_algorithm.__class__.__name__, best_score, best_params]
+
+    # Normalize column names (support both Portuguese and English CSV headers)
+    COL_ALIASES = {
+        "Nome do Algoritmo": "Algorithm Name",
+        "Melhor Resultado": "Best Score",
+        "Melhores Parametros": "Best Params",
+    }
 
     if output_path.is_file():
         df = pd.read_csv(output_path)
-        df_existing = df[df['Algorithm Name'] == ml_algorithm.__class__.__name__]
-        
+        df = df.rename(
+            columns={k: v for k, v in COL_ALIASES.items() if k in df.columns}
+        )
+        df_existing = df[df["Algorithm Name"] == ml_algorithm.__class__.__name__]
+
         if not df_existing.empty:
-            df.loc[df['Algorithm Name'] == ml_algorithm.__class__.__name__, 
-                   ['Best Score', 'Best Params']] = best_score, best_params
+            df.loc[
+                df["Algorithm Name"] == ml_algorithm.__class__.__name__,
+                ["Best Score", "Best Params"],
+            ] = best_score, best_params
         else:
-            df = pd.concat([df, pd.DataFrame([new_row], columns=df.columns)], ignore_index=True)
+            df = pd.concat(
+                [df, pd.DataFrame([new_row], columns=df.columns)], ignore_index=True
+            )
     else:
-        df = pd.DataFrame([new_row], columns=['Algorithm Name', 'Best Score', 'Best Params'])
-    
+        df = pd.DataFrame(
+            [new_row], columns=["Algorithm Name", "Best Score", "Best Params"]
+        )
+
     df.to_csv(str(output_path), index=False)
+
 
 # -------------------------------
 # Main Execution
 # -------------------------------
 if __name__ == "__main__":
-    run_GridSearch(n_clusters_Desempenho_campo=2, n_splits_kfold=5,
-                   naive=False,
-                   randomforest=False,
-                   knn=True,
-                   Logistic_Regression=False,
-                   SVM=False,
-                   MLP=False,
-                   XGboost=False,
-                   oversample=False,
-                   normal=True,
-                   metade=False,
-                   path_data='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)',
-                   path_save='D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)2\\')
+    run_GridSearch(
+        n_clusters_Desempenho_campo=2,
+        n_splits_kfold=5,
+        naive=False,
+        randomforest=False,
+        knn=True,
+        Logistic_Regression=False,
+        SVM=False,
+        MLP=False,
+        XGboost=False,
+        oversample=False,
+        normal=True,
+        metade=False,
+        path_data="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
+        path_save="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)2\\",
+    )

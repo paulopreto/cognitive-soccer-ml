@@ -6,14 +6,14 @@ Author: Rafael Luiz Martins Monteiro
 
 Description:
 -------------
-This script generates a comparative visualization of balanced accuracy values 
+This script generates a comparative visualization of balanced accuracy values
 for various machine learning algorithms predicting different performance outcomes.
 The visualization comprises four vertically aligned subplots, each corresponding
  to a different target outcome.
 
 Key Features:
 --------------
-- For each target variable, it plots the best balanced accuracy obtained from 
+- For each target variable, it plots the best balanced accuracy obtained from
   different combinations of cognitive functions.
 - Displays error bars representing standard deviation for each point.
 - Highlights the algorithm responsible for the best accuracy.
@@ -37,12 +37,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
-                           ylabel="Balanced accuracy (%)", 
-                           title="", show_xlabel=False, show_legend=False):
+
+def plot_balanced_accuracy(
+    ax,
+    dataset,
+    dataset_dp,
+    palette,
+    ylabel="Balanced accuracy (%)",
+    title="",
+    show_xlabel=False,
+    show_legend=False,
+):
     """
     Plots balanced accuracy results for cognitive function combinations on a given axis.
-    
+
     Parameters:
     - ax: The matplotlib axis to plot on.
     - dataset: Dictionary containing the mean metric values.
@@ -55,8 +63,8 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
     """
 
     # Extract balanced accuracy values and corresponding standard deviations
-    balanced_accuracy = dataset['balanced_accuracy'].copy()
-    balanced_accuracy_dp = dataset_dp['balanced_accuracy'].copy()
+    balanced_accuracy = dataset["balanced_accuracy"].copy()
+    balanced_accuracy_dp = dataset_dp["balanced_accuracy"].copy()
 
     # Identify the maximum balanced accuracy per row and corresponding algorithm
     balanced_accuracy["Max Value"] = balanced_accuracy.iloc[:, 1:].max(axis=1)
@@ -64,8 +72,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
 
     # Retrieve standard deviation corresponding to the max value
     balanced_accuracy["Standard Deviation"] = balanced_accuracy.apply(
-        lambda row: balanced_accuracy_dp.loc[row.name, row["Algorithms"]],
-        axis=1
+        lambda row: balanced_accuracy_dp.loc[row.name, row["Algorithms"]], axis=1
     )
 
     # Mapping for variable name abbreviations
@@ -74,7 +81,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
         "Flexibilidade_cognitiva_(B-A)": "CF",
         "Capacidade_de_rastreamento": "TC",
         "Acuracia_nogo": "I",
-        "Memory_span": "VWM"
+        "Memory_span": "VWM",
     }
 
     # Translate variable names to abbreviations for cleaner axis labels
@@ -86,7 +93,9 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
     # Support both 'variables' and 'variaveis' column names for backward compatibility
     col_var = "variables" if "variables" in balanced_accuracy.columns else "variaveis"
     balanced_accuracy[col_var] = balanced_accuracy[col_var].apply(translate_variable)
-    balanced_accuracy[col_var] = balanced_accuracy[col_var].str.replace("_", "-", regex=False)
+    balanced_accuracy[col_var] = balanced_accuracy[col_var].str.replace(
+        "_", "-", regex=False
+    )
 
     # Sort the data by balanced accuracy values for better visual distribution
     balanced_accuracy = balanced_accuracy.sort_values(by="Max Value")
@@ -101,7 +110,7 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
         s=70,
         edgecolor="black",
         ax=ax,
-        legend="auto" if show_legend else False
+        legend="auto" if show_legend else False,
     )
 
     # Plot vertical error bars indicating standard deviation
@@ -112,23 +121,23 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
         fmt="none",
         ecolor="black",
         elinewidth=0.8,
-        capsize=2.5
+        capsize=2.5,
     )
 
     # Adjust X-axis label formatting
-    ax.set_xticklabels(balanced_accuracy[col_var], rotation=30, ha='right', fontsize=9)
+    ax.set_xticklabels(balanced_accuracy[col_var], rotation=30, ha="right", fontsize=9)
 
     # Conditionally display X-axis label
     ax.set_xlabel("Cognitive functions combinations", fontsize=9 if show_xlabel else 0)
 
     ax.set_ylabel(ylabel, fontsize=9)
-    ax.set_title(title, fontsize=12, weight='bold')
-    ax.tick_params(axis='y', labelsize=8)
+    ax.set_title(title, fontsize=12, weight="bold")
+    ax.tick_params(axis="y", labelsize=8)
     ax.grid(axis="y", linestyle="--", alpha=0.5)
 
     # Remove unnecessary plot spines
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
 
     return scatter
 
@@ -141,23 +150,18 @@ def plot_balanced_accuracy(ax, dataset, dataset_dp, palette,
 base_path = Path("D:/Processamento_mestrado_Sports_Science/final_analysis/results_CV")
 
 # Target variable codes and corresponding subplot titles
-siglas = ['gf', 'gs', 'gc', 'sg']
-titles = [
-    "Individual Goals",
-    "Conceded Goals",
-    "Goals by Teammates",
-    "Net Goals"
-]
+siglas = ["gf", "gs", "gc", "sg"]
+titles = ["Individual Goals", "Conceded Goals", "Goals by Teammates", "Net Goals"]
 
 # Color mapping for algorithms
 algorithms_colors = {
-    'KNN': '#27AE60',           
-    'Random forest': '#8c564b', 
-    'LogisticRegression': '#2ca02c',
-    'SVM': '#4C72B0',           
-    'Xgboost': '#9467bd',       
-    'Neural network': '#FF7F0E',   
-    'Naive':  '#D62828'        
+    "KNN": "#27AE60",
+    "Random forest": "#8c564b",
+    "LogisticRegression": "#2ca02c",
+    "SVM": "#4C72B0",
+    "Xgboost": "#9467bd",
+    "Neural network": "#FF7F0E",
+    "Naive": "#D62828",
 }
 
 # Prepare a 4-row subplot figure for visualizing each target metric
@@ -176,8 +180,14 @@ for i, sigla in enumerate(siglas):
     xls_means = pd.ExcelFile(path_means)
     xls_stddevs = pd.ExcelFile(path_stddevs)
 
-    dataset = {sheet_name: pd.read_excel(xls_means, sheet_name=sheet_name) for sheet_name in xls_means.sheet_names}
-    dataset_dp = {sheet_name: pd.read_excel(xls_stddevs, sheet_name=sheet_name) for sheet_name in xls_stddevs.sheet_names}
+    dataset = {
+        sheet_name: pd.read_excel(xls_means, sheet_name=sheet_name)
+        for sheet_name in xls_means.sheet_names
+    }
+    dataset_dp = {
+        sheet_name: pd.read_excel(xls_stddevs, sheet_name=sheet_name)
+        for sheet_name in xls_stddevs.sheet_names
+    }
 
     # Plot the balanced accuracy for the current target variable
     scatter = plot_balanced_accuracy(
@@ -187,24 +197,24 @@ for i, sigla in enumerate(siglas):
         palette=algorithms_colors,
         title=titles[i],
         show_xlabel=(i == len(siglas) - 1),
-        show_legend=True
+        show_legend=True,
     )
 
     # Extract and store unique legend handles and labels for the global legend
     handles_i, labels_i = axs[i].get_legend_handles_labels()
     for handle, label in zip(handles_i, labels_i):
         # Standardize algorithm labels for final legend
-        if label == 'Neural network':
-            label_ = 'MLP'
-        elif label == 'Random forest':
-            label_ = 'RF'
-        elif label == 'Naive':
-            label_ = 'GNB'
-        elif label == 'Xgboost':
-            label_ = 'XGBoost'
+        if label == "Neural network":
+            label_ = "MLP"
+        elif label == "Random forest":
+            label_ = "RF"
+        elif label == "Naive":
+            label_ = "GNB"
+        elif label == "Xgboost":
+            label_ = "XGBoost"
         else:
             label_ = label
-        
+
         if label_ not in all_handles:
             all_handles[label_] = handle
 
@@ -216,11 +226,11 @@ for i, sigla in enumerate(siglas):
 fig.legend(
     all_handles.values(),
     all_handles.keys(),
-    loc='center right',
+    loc="center right",
     bbox_to_anchor=(1, 0.5),
     fontsize=9,
     title="Algorithms",
-    title_fontsize=10
+    title_fontsize=10,
 )
 
 # Adjust layout to accommodate legend outside plot area

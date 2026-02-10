@@ -41,18 +41,14 @@ Output:
 """
 
 # === Imports ===
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 import pickle
-from imblearn.over_sampling import SMOTE
-from scipy import stats
 from pathlib import Path
 from itertools import combinations
+
 
 # -------------------------------
 # Generate all possible combinations of a list of columns
@@ -62,7 +58,8 @@ def generate_combinations(cols):
     for r in range(1, len(cols) + 1):
         comb = list(combinations(cols, r))
         all_combinations.extend(comb)
-    return all_combinations       
+    return all_combinations
+
 
 # -------------------------------
 # Apply KMeans clustering to a DataFrame and add cluster labels
@@ -71,8 +68,9 @@ def kmeans_cluster(dados, n_clusters):
     kmeans = KMeans(n_clusters=n_clusters, random_state=0)
     kmeans.fit(dados)
     dados_com_clusters = dados.copy()
-    dados_com_clusters['cluster'] = kmeans.labels_
+    dados_com_clusters["cluster"] = kmeans.labels_
     return dados_com_clusters
+
 
 # -------------------------------
 # Apply KMeans clustering per team (22 athletes per team)
@@ -94,15 +92,17 @@ def kmeans_cluster_teams(dados, n_clusters):
     dados_com_clusters = pd.concat([dados_team_1, dados_team_2])
     return dados_com_clusters
 
+
 # -------------------------------
 # Add Binary Cluster Label Splitting Top/Bottom Half (per Team)
 # -------------------------------
 def add_cluster_half(dados):
     d_sorted = dados.sort_values(by=0, ascending=False)
     midpoint = len(d_sorted) // 2
-    d_sorted['cluster'] = 0
-    d_sorted.iloc[:midpoint, d_sorted.columns.get_loc('cluster')] = 1
+    d_sorted["cluster"] = 0
+    d_sorted.iloc[:midpoint, d_sorted.columns.get_loc("cluster")] = 1
     return d_sorted.sort_index()
+
 
 # -------------------------------
 # Apply Half Labeling per Team
@@ -112,13 +112,18 @@ def label_half_teams(dados, n_clusters):
     dados_2team = dados[22:].copy()
 
     scaler_1team = StandardScaler()
-    dados_team_1 = add_cluster_half(pd.DataFrame(scaler_1team.fit_transform(dados_1team)))
+    dados_team_1 = add_cluster_half(
+        pd.DataFrame(scaler_1team.fit_transform(dados_1team))
+    )
 
     scaler_2team = StandardScaler()
-    dados_team_2 = add_cluster_half(pd.DataFrame(scaler_2team.fit_transform(dados_2team)))
+    dados_team_2 = add_cluster_half(
+        pd.DataFrame(scaler_2team.fit_transform(dados_2team))
+    )
 
     dados_com_clusters = pd.concat([dados_team_1, dados_team_2])
     return dados_com_clusters
+
 
 # -------------------------------
 # KMeans Clustering Applied to Each Column Individually
@@ -128,8 +133,9 @@ def kmeans_cluster_columns(dados, n_clusters):
     for coluna in dados.columns:
         kmeans = KMeans(n_clusters=n_clusters, random_state=0)
         kmeans.fit(dados[[coluna]])
-        dados_com_clusters[str(coluna) + '_cluster'] = kmeans.labels_
+        dados_com_clusters[str(coluna) + "_cluster"] = kmeans.labels_
     return dados_com_clusters
+
 
 # -------------------------------
 # Reorganize Cluster Labels from High-to-Low Ordering
@@ -140,13 +146,24 @@ def reorganizar_labels(dados, n_clusters):
     nova_ordem = list(range(n_clusters - 1, -1, -1))
     dados_reorganizados = dados_ordenados.copy()
     for i, label in enumerate(ordem_original):
-        dados_reorganizados.loc[dados_ordenados[dados.columns[1]] == label, dados.columns[1]] = nova_ordem[i]
+        dados_reorganizados.loc[
+            dados_ordenados[dados.columns[1]] == label, dados.columns[1]
+        ] = nova_ordem[i]
     return dados_reorganizados.sort_index()
+
 
 # -------------------------------
 # Main Execution Function for Dataset Preparation
 # -------------------------------
-def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False, normal=False, metade=False, colunas_func_cog=None):
+def run(
+    path_to_data,
+    path_save,
+    n_clusters_Desempenho_campo=2,
+    oversample=False,
+    normal=False,
+    metade=False,
+    colunas_func_cog=None,
+):
     path_to_data = Path(path_to_data)
     path_save = Path(path_save)
     full_data = pd.read_csv(path_to_data)
@@ -157,62 +174,93 @@ def run(path_to_data, path_save, n_clusters_Desempenho_campo=2, oversample=False
     X_cognitivo_norm = scaler_cog.fit_transform(X_cognitivo)
 
     # Select Field Performance Variables
-    Y_campo = full_data[['gols_feitos', 'gols_sofridos', 'gols_companheiros', 'saldo_gols']]
+    Y_campo = full_data[
+        ["gols_feitos", "gols_sofridos", "gols_companheiros", "saldo_gols"]
+    ]
 
     # Generate KMeans Clusters (Default) for Field Performance per Team
-    Y_gf = kmeans_cluster_teams(Y_campo[['gols_feitos']], n_clusters_Desempenho_campo).reset_index(drop=True)
-    Y_gs = kmeans_cluster_teams(Y_campo[['gols_sofridos']], n_clusters_Desempenho_campo).reset_index(drop=True)
-    Y_gc = kmeans_cluster_teams(Y_campo[['gols_companheiros']], n_clusters_Desempenho_campo).reset_index(drop=True)
-    Y_sg = kmeans_cluster_teams(Y_campo[['saldo_gols']], n_clusters_Desempenho_campo).reset_index(drop=True)
+    Y_gf = kmeans_cluster_teams(
+        Y_campo[["gols_feitos"]], n_clusters_Desempenho_campo
+    ).reset_index(drop=True)
+    Y_gs = kmeans_cluster_teams(
+        Y_campo[["gols_sofridos"]], n_clusters_Desempenho_campo
+    ).reset_index(drop=True)
+    Y_gc = kmeans_cluster_teams(
+        Y_campo[["gols_companheiros"]], n_clusters_Desempenho_campo
+    ).reset_index(drop=True)
+    Y_sg = kmeans_cluster_teams(
+        Y_campo[["saldo_gols"]], n_clusters_Desempenho_campo
+    ).reset_index(drop=True)
 
     path_save.mkdir(parents=True, exist_ok=True)
 
     # Save Datasets (Oversample Scenario)
     if oversample:
-        datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
+        datasets = [("gf", Y_gf), ("gs", Y_gs), ("gc", Y_gc), ("sg", Y_sg)]
         for name, Y in datasets:
-            X_train, X_test, y_train, y_test = train_test_split(X_cognitivo, Y, test_size=0.25, random_state=0)
-            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
-                pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
-        return()
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_cognitivo, Y, test_size=0.25, random_state=0
+            )
+            with open(path_save / f"cogfut_{name}.pkl", "wb") as f:
+                pickle.dump([X_train, y_train["cluster"], X_test, y_test["cluster"]], f)
+        return ()
 
     # Save Datasets (Normal Scenario)
     if normal:
-        datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
+        datasets = [("gf", Y_gf), ("gs", Y_gs), ("gc", Y_gc), ("sg", Y_sg)]
         for name, Y in datasets:
-            X_train, X_test, y_train, y_test = train_test_split(X_cognitivo, Y, test_size=0.25, random_state=0)
-            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
-                pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_cognitivo, Y, test_size=0.25, random_state=0
+            )
+            with open(path_save / f"cogfut_{name}.pkl", "wb") as f:
+                pickle.dump([X_train, y_train["cluster"], X_test, y_test["cluster"]], f)
 
     # Save Datasets (Metade Scenario)
     if metade:
-        Y_gf = label_half_teams(Y_campo[['gols_feitos']], n_clusters_Desempenho_campo)
-        Y_gs = label_half_teams(Y_campo[['gols_sofridos']], n_clusters_Desempenho_campo)
-        Y_gc = label_half_teams(Y_campo[['gols_companheiros']], n_clusters_Desempenho_campo)
-        Y_sg = label_half_teams(Y_campo[['saldo_gols']], n_clusters_Desempenho_campo)
+        Y_gf = label_half_teams(Y_campo[["gols_feitos"]], n_clusters_Desempenho_campo)
+        Y_gs = label_half_teams(Y_campo[["gols_sofridos"]], n_clusters_Desempenho_campo)
+        Y_gc = label_half_teams(
+            Y_campo[["gols_companheiros"]], n_clusters_Desempenho_campo
+        )
+        Y_sg = label_half_teams(Y_campo[["saldo_gols"]], n_clusters_Desempenho_campo)
 
-        datasets = [('gf', Y_gf), ('gs', Y_gs), ('gc', Y_gc), ('sg', Y_sg)]
+        datasets = [("gf", Y_gf), ("gs", Y_gs), ("gc", Y_gc), ("sg", Y_sg)]
         for name, Y in datasets:
-            X_train, X_test, y_train, y_test = train_test_split(X_cognitivo_norm, Y, test_size=0.25, random_state=0)
-            with open(path_save / f'cogfut_{name}.pkl', 'wb') as f:
-                pickle.dump([X_train, y_train['cluster'], X_test, y_test['cluster']], f)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_cognitivo_norm, Y, test_size=0.25, random_state=0
+            )
+            with open(path_save / f"cogfut_{name}.pkl", "wb") as f:
+                pickle.dump([X_train, y_train["cluster"], X_test, y_test["cluster"]], f)
+
 
 # -------------------------------
 # Batch Execution over all Combinations
 # -------------------------------
 if __name__ == "__main__":
-    colunas_func_cog = ['Memory span', 'Acuracia Go', 'Acuracia nogo', 'Capacidade de rastreamento', 'Flexibilidade cognitiva (B-A)']
+    colunas_func_cog = [
+        "Memory span",
+        "Acuracia Go",
+        "Acuracia nogo",
+        "Capacidade de rastreamento",
+        "Flexibilidade cognitiva (B-A)",
+    ]
     combinations_list = generate_combinations(colunas_func_cog)
-    path_base_save = Path('D:/Processamento_mestrado_Sports_Science/final_analysis/data/ML_datasets2')
+    path_base_save = Path(
+        "D:/Processamento_mestrado_Sports_Science/final_analysis/data/ML_datasets2"
+    )
 
     for combinacao in combinations_list:
-        combinacao_str = '_'.join([col.replace(' ', '_') for col in combinacao])
+        combinacao_str = "_".join([col.replace(" ", "_") for col in combinacao])
         path_save = path_base_save / combinacao_str
 
-        run(path_to_data=Path('D:/Processamento_mestrado_Sports_Science/final_analysis/data/dataset_completo.csv'),
+        run(
+            path_to_data=Path(
+                "D:/Processamento_mestrado_Sports_Science/final_analysis/data/dataset_completo.csv"
+            ),
             path_save=path_save,
             n_clusters_Desempenho_campo=2,
             oversample=False,
             normal=True,
             metade=False,
-            colunas_func_cog=list(combinacao))
+            colunas_func_cog=list(combinacao),
+        )
