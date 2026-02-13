@@ -236,29 +236,30 @@ def run_all_LOO_matrices(datasets_info, algorithm_name, path_save_img_final):
 # Execution Entry Point
 # ====================
 if __name__ == "__main__":
+    _root = Path(__file__).resolve().parent.parent
     run_all_LOO_matrices(
         datasets_info=[
             {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
-                "path_best_params_csv": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\best_param\\Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
+                "path_data": str(_root / "data" / "ML_datasets" / "Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"),
+                "path_best_params_csv": str(_root / "best_param" / "Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"),
                 "identificador": "gf",
             },
             {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span",
-                "path_best_params_csv": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\best_param\\Memory_span",
+                "path_data": str(_root / "data" / "ML_datasets" / "Memory_span"),
+                "path_best_params_csv": str(_root / "best_param" / "Memory_span"),
                 "identificador": "gs",
             },
             {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Acuracia_nogo_Capacidade_de_rastreamento",
-                "path_best_params_csv": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\best_param\\Acuracia_nogo_Capacidade_de_rastreamento",
+                "path_data": str(_root / "data" / "ML_datasets" / "Acuracia_nogo_Capacidade_de_rastreamento"),
+                "path_best_params_csv": str(_root / "best_param" / "Acuracia_nogo_Capacidade_de_rastreamento"),
                 "identificador": "gc",
             },
             {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)",
-                "path_best_params_csv": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\best_param\\Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)",
+                "path_data": str(_root / "data" / "ML_datasets" / "Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)"),
+                "path_best_params_csv": str(_root / "best_param" / "Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)"),
                 "identificador": "sg",
             },
         ],
         algorithm_name="KNeighborsClassifier",
-        path_save_img_final="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\matriz_final_LOO",
+        path_save_img_final=str(_root / "matriz_final_LOO"),
     )

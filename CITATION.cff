@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software or the associated results, please cite the paper and this repository as below."
+title: "cognitive-soccer-ml"
+version: 0.1.0
+type: software
+authors:
+  - family-names: "Monteiro"
+    given-names: "Rafael Luiz Martins"
+date-released: 2025-02-13
+description: "Machine learning pipeline to predict player effectiveness in small-sided soccer games from cognitive functions. Supports nested cross-validation, permutation tests, and reproduction of figures from the accompanying article."
+keywords:
+  - machine learning
+  - sports science
+  - cognitive functions
+  - soccer
+  - nested cross-validation
+license: MIT
+repository-code: "https://github.com/rafaelmonteiro/cognitive-soccer-ml"
+preferred-citation:
+  type: article
+  title: "Cognitive functions and small-sided game performance in soccer (PMS-25-0542.R1)"
+  authors:
+    - family-names: "Monteiro"
+      given-names: "Rafael Luiz Martins"
+  journal: "Perceptual and Motor Skills"
+  year: 2025

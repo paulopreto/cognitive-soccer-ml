@@ -147,7 +147,7 @@ def plot_balanced_accuracy(
 # -------------------
 
 # Define base directory containing results files (pathlib for cross-platform)
-base_path = Path("D:/Processamento_mestrado_Sports_Science/final_analysis/results_CV")
+base_path = Path(__file__).resolve().parent.parent / "results_CV"
 
 # Target variable codes and corresponding subplot titles
 siglas = ["gf", "gs", "gc", "sg"]

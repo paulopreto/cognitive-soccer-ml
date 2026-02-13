@@ -34,6 +34,7 @@ run the script. The consolidated Excel files will be saved in the specified dire
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+from pathlib import Path
 
 
 def save_table_as_image(data, columns, title, save_path, footer_text=None):
@@ -232,10 +233,8 @@ def extrair_salvar_medias(path_dir_combinacoes):
 
 
 if __name__ == "__main__":
-    # Root folder containing subfolders with Excel result files
-    path_dir_combinacoes = (
-        "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\results_CV\\"
-    )
+    project_root = Path(__file__).resolve().parent.parent
+    path_dir_combinacoes = str(project_root / "results_CV")
 
     # Extract means and std deviations, consolidate and save
     extrair_salvar_medias(path_dir_combinacoes)

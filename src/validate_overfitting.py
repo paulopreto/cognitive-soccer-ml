@@ -32,10 +32,12 @@ Output:
 -------------------------------------------------------------------------------
 """
 
+import ast
 import pickle
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import permutation_test_score, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
@@ -43,8 +45,33 @@ from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
 
 
+def _load_knn_params_from_csv(path_param_csv):
+    """Load KNeighborsClassifier hyperparameters from best_param CSV. Returns dict or None."""
+    path_param_csv = Path(path_param_csv)
+    if not path_param_csv.is_file():
+        return None
+    df = pd.read_csv(path_param_csv)
+    # Support both Portuguese and English column names
+    name_col = "Algorithm Name" if "Algorithm Name" in df.columns else "Nome do Algoritmo"
+    params_col = "Best Params" if "Best Params" in df.columns else "Melhores Parametros"
+    row = df[df[name_col] == "KNeighborsClassifier"]
+    if row.empty:
+        return None
+    cell = row[params_col].iloc[0]
+    if pd.isna(cell) or not isinstance(cell, str) or cell.strip() in ("", "{}"):
+        return None
+    try:
+        return ast.literal_eval(cell)
+    except (ValueError, SyntaxError):
+        return None
+
+
 def run_permutation_test(
-    path_pkl, n_permutations=1000, output_dir=None, random_state=0
+    path_pkl,
+    n_permutations=1000,
+    output_dir=None,
+    random_state=0,
+    path_best_param_dir=None,
 ):
     """
     Run permutation test to assess whether model performance is better than chance.
@@ -64,6 +91,10 @@ def run_permutation_test(
         Directory to save the figure. Default: project_root/figures.
     random_state : int
         Random seed for reproducibility.
+    path_best_param_dir : str or pathlib.Path, optional
+        Base directory of best_param (e.g. best_param/). If given, KNN hyperparameters
+        are loaded from the CSV matching the pkl's combo and identifier (validates
+        the actual model used in the paper). If None, uses default n_neighbors=5, p=2.
 
     Returns
     -------
@@ -85,10 +116,21 @@ def run_permutation_test(
     y = np.concatenate((y_train, y_test), axis=0)
     n_samples = len(y)
 
+    # Use best hyperparameters from CSV when available (same combo/identifier as pkl)
+    knn_params = None
+    if path_best_param_dir is not None:
+        path_best_param_dir = Path(path_best_param_dir)
+        combo_name = path_pkl.parent.name
+        identifier = path_pkl.stem.replace("cogfut_", "")
+        path_param_csv = path_best_param_dir / combo_name / f"{identifier}_parametros.csv"
+        knn_params = _load_knn_params_from_csv(path_param_csv)
+    if knn_params is None:
+        knn_params = {"n_neighbors": 5, "p": 2}
+
     pipeline = Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("clf", KNeighborsClassifier(n_neighbors=5, p=2)),
+            ("clf", KNeighborsClassifier(**knn_params)),
         ]
     )
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
@@ -169,8 +211,10 @@ if __name__ == "__main__":
     import os
 
     path_pkl_env = os.environ.get("PATH_PKL")
+    best_param_dir = project_root / "best_param"
     run_permutation_test(
         path_pkl=Path(path_pkl_env) if path_pkl_env else default_pkl,
         n_permutations=1000,
         output_dir=project_root / "figures",
+        path_best_param_dir=best_param_dir if best_param_dir.is_dir() else None,
     )

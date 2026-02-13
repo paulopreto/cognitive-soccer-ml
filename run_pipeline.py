@@ -16,15 +16,11 @@ portability (macOS, Windows, Linux).
 -------------------------------------------------------------------------------
 """
 
-import sys
 from pathlib import Path
 
 
 def main():
     project_root = Path(__file__).resolve().parent
-    src_dir = project_root / "src"
-    if str(src_dir) not in sys.path:
-        sys.path.insert(0, str(src_dir))
 
     # Paths (cross-platform via pathlib)
     data_dir = project_root / "data"
@@ -38,7 +34,7 @@ def main():
     # ----- Step 1: Data processing -----
     print("Step 1: Processing data...")
     try:
-        import data_preprocessing
+        from src import data_preprocessing
 
         colunas = [
             "Memory span",
@@ -71,7 +67,7 @@ def main():
     # ----- Step 2: Nested CV evaluation -----
     print("Step 2: Validating model robustness (Nested CV evaluation)...")
     try:
-        import train_final_models
+        from src import train_final_models
 
         train_final_models.run_training_pipeline(
             path_dir_combinations=str(ml_datasets_dir),
@@ -83,10 +79,24 @@ def main():
         print(f"  Warning: Nested CV step failed: {e}")
         print("  You may need to run hyperparameter tuning first or check paths.")
 
+    # ----- Step 2a: Nested CV confusion matrices (Figure 8) -----
+    print("Step 2a: Generating nested CV confusion matrices (Figure 8)...")
+    try:
+        from src import nested_cv_confusion_matrix
+
+        nested_cv_confusion_matrix.run_nested_cv_figure(
+            ml_datasets_dir=str(ml_datasets_dir),
+            path_save_img_final=str(project_root / "figures"),
+            algorithm_name="KNeighborsClassifier",
+        )
+        print("  Nested CV figure saved to figures/.")
+    except Exception as e:
+        print(f"  Warning: Nested CV figure step failed: {e}")
+
     # ----- Step 2b: Save fitted models to models/ -----
     print("Step 2b: Saving fitted models to models/...")
     try:
-        import save_models
+        from src import save_models
 
         models_dir = project_root / "models"
         save_models.run_save_models(
@@ -101,7 +111,7 @@ def main():
     # ----- Step 3: Overfitting validation (permutation test) -----
     print("Step 3: Validating model robustness (permutation test)...")
     try:
-        import validate_overfitting
+        from src import validate_overfitting
 
         pkl_path = None
         if ml_datasets_dir.is_dir():
@@ -116,6 +126,7 @@ def main():
                 path_pkl=pkl_path,
                 n_permutations=1000,
                 output_dir=str(project_root / "figures"),
+                path_best_param_dir=str(best_param_dir),
             )
             print(
                 "  Permutation test completed. See figures/permutation_test_proof.png"

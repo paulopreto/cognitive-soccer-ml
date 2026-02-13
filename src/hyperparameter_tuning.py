@@ -269,7 +269,7 @@ def grid_search(
         cv=kfold,
         param_grid=param_grid,
         scoring="balanced_accuracy",
-        refit="f1_macro",
+        refit=True,
     )
 
     grid_search.fit(X_cog, y_campo)
@@ -319,6 +319,8 @@ def grid_search(
 # Main Execution
 # -------------------------------
 if __name__ == "__main__":
+    _root = Path(__file__).resolve().parent.parent
+    _combo = "Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"
     run_GridSearch(
         n_clusters_Desempenho_campo=2,
         n_splits_kfold=5,
@@ -332,6 +334,6 @@ if __name__ == "__main__":
         oversample=False,
         normal=True,
         metade=False,
-        path_data="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
-        path_save="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)2\\",
+        path_data=str(_root / "data" / "ML_datasets" / _combo),
+        path_save=str(_root / "best_param" / _combo),
     )

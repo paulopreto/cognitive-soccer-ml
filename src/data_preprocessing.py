@@ -73,11 +73,27 @@ def kmeans_cluster(dados, n_clusters):
 
 
 # -------------------------------
-# Apply KMeans clustering per team (22 athletes per team)
+# Apply KMeans clustering per team (split by midpoint; default assumes two equal-sized teams)
 # -------------------------------
-def kmeans_cluster_teams(dados, n_clusters):
-    dados_1team = dados[:22].copy()
-    dados_2team = dados[22:].copy()
+def kmeans_cluster_teams(dados, n_clusters, first_team_size=None):
+    n = len(dados)
+    if first_team_size is not None:
+        n1 = first_team_size
+    else:
+        n1 = n // 2
+    n2 = n - n1
+    if n < 4:
+        raise ValueError(
+            f"kmeans_cluster_teams: need at least 4 rows (got {n}). "
+            "Clustering requires at least 2 samples per team."
+        )
+    if n1 < 2 or n2 < 2:
+        raise ValueError(
+            f"kmeans_cluster_teams: each team must have at least 2 rows. "
+            f"Got team sizes {n1}, {n2} (total {n})."
+        )
+    dados_1team = dados.iloc[:n1].copy()
+    dados_2team = dados.iloc[n1:].copy()
 
     scaler_1team = StandardScaler()
     dados_1team_norm = scaler_1team.fit_transform(dados_1team)
@@ -107,9 +123,14 @@ def add_cluster_half(dados):
 # -------------------------------
 # Apply Half Labeling per Team
 # -------------------------------
-def label_half_teams(dados, n_clusters):
-    dados_1team = dados[:22].copy()
-    dados_2team = dados[22:].copy()
+def label_half_teams(dados, n_clusters, first_team_size=None):
+    n = len(dados)
+    n1 = (first_team_size if first_team_size is not None else n // 2)
+    n2 = n - n1
+    if n1 < 1 or n2 < 1:
+        raise ValueError(f"label_half_teams: invalid split (n1={n1}, n2={n2}, n={n}).")
+    dados_1team = dados.iloc[:n1].copy()
+    dados_2team = dados.iloc[n1:].copy()
 
     scaler_1team = StandardScaler()
     dados_team_1 = add_cluster_half(
@@ -237,6 +258,8 @@ def run(
 # Batch Execution over all Combinations
 # -------------------------------
 if __name__ == "__main__":
+    project_root = Path(__file__).resolve().parent.parent
+    data_dir = project_root / "data"
     colunas_func_cog = [
         "Memory span",
         "Acuracia Go",
@@ -245,18 +268,17 @@ if __name__ == "__main__":
         "Flexibilidade cognitiva (B-A)",
     ]
     combinations_list = generate_combinations(colunas_func_cog)
-    path_base_save = Path(
-        "D:/Processamento_mestrado_Sports_Science/final_analysis/data/ML_datasets2"
-    )
+    path_csv = data_dir / "Dataset_cog_clusters.csv"
+    if not path_csv.is_file():
+        path_csv = data_dir / "dataset.csv"
+    path_base_save = data_dir / "ML_datasets"
 
     for combinacao in combinations_list:
         combinacao_str = "_".join([col.replace(" ", "_") for col in combinacao])
         path_save = path_base_save / combinacao_str
 
         run(
-            path_to_data=Path(
-                "D:/Processamento_mestrado_Sports_Science/final_analysis/data/dataset_completo.csv"
-            ),
+            path_to_data=path_csv,
             path_save=path_save,
             n_clusters_Desempenho_campo=2,
             oversample=False,

@@ -226,6 +226,66 @@ def aggregate_and_save_results(
     save_raw_results_to_xlsx(results_dict, str(path_save), identifier)
 
 
+# Algorithm config: (display_name, classifier_class, row_index in best_param CSV; None = no params)
+ALGORITHMS = [
+    ("Naive", GaussianNB, None),
+    ("Random forest", RandomForestClassifier, 1),
+    ("KNN", KNeighborsClassifier, 2),
+    ("Logistic Regression", LogisticRegression, 3),
+    ("SVM", SVC, 4),
+    ("Neural network", MLPClassifier, 5),
+    ("Xgboost", XGBClassifier, 6),
+]
+
+
+def _get_params_for_algorithm(best_param, row_index):
+    """Load hyperparameters for an algorithm from best_param CSV by row index."""
+    if row_index is None:
+        return {}
+    try:
+        return extract_params_dict(best_param.iloc[row_index, 0])
+    except Exception:
+        return extract_params_dict_correct(best_param.iloc[row_index, 2])
+
+
+def _build_pipeline(estimator, oversample):
+    """Build Pipeline with optional SMOTE and StandardScaler."""
+    steps = []
+    if oversample:
+        steps.append(
+            ("smote", SMOTE(sampling_strategy="minority", random_state=0))
+        )
+    steps.extend([("scaler", StandardScaler()), ("clf", estimator)])
+    return Pipeline(steps)
+
+
+def _run_one_cv_iteration(pipeline, X_cog, y_campo, kfold, scoring, oversample):
+    """Run cross_validate; if NaN with oversample, retry with SMOTE k_neighbors=3."""
+    scores = cross_validate(
+        pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
+    )
+    if np.any(np.isnan(scores["test_accuracy"])) and oversample:
+        clf = pipeline.named_steps["clf"]
+        pipeline = Pipeline(
+            [
+                (
+                    "smote",
+                    SMOTE(
+                        sampling_strategy="minority",
+                        random_state=0,
+                        k_neighbors=3,
+                    ),
+                ),
+                ("scaler", StandardScaler()),
+                ("clf", clf),
+            ]
+        )
+        scores = cross_validate(
+            pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
+        )
+    return {metric: np.mean(scores["test_" + metric]) for metric in scoring}
+
+
 def run_cross_validation(
     path_data,
     path_param,
@@ -288,13 +348,7 @@ def run_cross_validation(
         y_campo = np.concatenate((y_campo_treinamento, y_campo_teste), axis=0)
 
         # Prepare lists to collect results for each algorithm
-        resultados_naive = []
-        resultados_random_forest = []
-        resultados_knn = []
-        resultados_logistica = []
-        resultados_svm = []
-        resultados_rede_neural = []
-        resultados_xgboost = []
+        results_by_algo = {name: [] for name, _, _ in ALGORITHMS}
 
         # Load best hyperparameters from CSV
         best_param = pd.read_csv(path_params, sep=",")
@@ -323,508 +377,53 @@ def run_cross_validation(
                 n_splits=n_splits_kfold, shuffle=True, random_state=j
             )
 
+            algorithms_to_run = (
+                [a for a in ALGORITHMS if a[0] == "KNN"] if run_knn_only else ALGORITHMS
+            )
+            for algo_name, Cls, row_ix in algorithms_to_run:
+                params = _get_params_for_algorithm(best_param, row_ix)
+                estimator = Cls(**params) if params else Cls()
+                pipeline = _build_pipeline(estimator, oversample)
+                one_result = _run_one_cv_iteration(
+                    pipeline, X_cog, y_campo, kfold, scoring, oversample
+                )
+                results_by_algo[algo_name].append(one_result)
+
             if run_knn_only:
-                # Only run KNN pipeline
-
-                ######################################################################################
-                # KNN Classifier Pipeline
-                ######################################################################################
-                try:
-                    params = extract_params_dict(best_param.iloc[2, 0])
-                except Exception:
-                    params = extract_params_dict_correct(best_param.iloc[2, 2])
-
-                knn = KNeighborsClassifier(**params)
-
-                if oversample:
-                    pipeline = Pipeline(
-                        [
-                            (
-                                "smote",
-                                SMOTE(sampling_strategy="minority", random_state=0),
-                            ),
-                            ("scaler", StandardScaler()),
-                            ("clf", knn),
-                        ]
-                    )
-                else:
-                    pipeline = Pipeline([("scaler", StandardScaler()), ("clf", knn)])
-
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
+                aggregate_and_save_results(
+                    path_save,
+                    results_by_algo["Naive"],
+                    results_by_algo["Random forest"],
+                    results_by_algo["KNN"],
+                    results_by_algo["Logistic Regression"],
+                    results_by_algo["SVM"],
+                    results_by_algo["Neural network"],
+                    results_by_algo["Xgboost"],
+                    identifier,
                 )
-
-                # Retry with lower k_neighbors in SMOTE if NaNs detected
-                if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                    pipeline = Pipeline(
-                        [
-                            (
-                                "smote",
-                                SMOTE(
-                                    sampling_strategy="minority",
-                                    random_state=0,
-                                    k_neighbors=3,
-                                ),
-                            ),
-                            ("scaler", StandardScaler()),
-                            ("clf", knn),
-                        ]
-                    )
-                    scores = cross_validate(
-                        pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                    )
-
-                resultados_knn.append(
-                    {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-                )
-
-                # Save results and exit early since only KNN was requested
-                if identifier == "gf":
-                    aggregate_and_save_results(
-                        path_save,
-                        resultados_naive,
-                        resultados_random_forest,
-                        resultados_knn,
-                        resultados_logistica,
-                        resultados_svm,
-                        resultados_rede_neural,
-                        resultados_xgboost,
-                        "gf",
-                    )
-                if identifier == "gs":
-                    aggregate_and_save_results(
-                        path_save,
-                        resultados_naive,
-                        resultados_random_forest,
-                        resultados_knn,
-                        resultados_logistica,
-                        resultados_svm,
-                        resultados_rede_neural,
-                        resultados_xgboost,
-                        "gs",
-                    )
-                if identifier == "gc":
-                    aggregate_and_save_results(
-                        path_save,
-                        resultados_naive,
-                        resultados_random_forest,
-                        resultados_knn,
-                        resultados_logistica,
-                        resultados_svm,
-                        resultados_rede_neural,
-                        resultados_xgboost,
-                        "gc",
-                    )
-                if identifier == "sg":
-                    aggregate_and_save_results(
-                        path_save,
-                        resultados_naive,
-                        resultados_random_forest,
-                        resultados_knn,
-                        resultados_logistica,
-                        resultados_svm,
-                        resultados_rede_neural,
-                        resultados_xgboost,
-                        "sg",
-                    )
                 return ()
 
-            ######################################################################################
-            # Naive Bayes Classifier Pipeline
-            ######################################################################################
-            naive = GaussianNB()
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", naive),
-                    ]
-                )
-            else:
-                pipeline = Pipeline([("scaler", StandardScaler()), ("clf", naive)])
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            # Retry with lower k_neighbors in SMOTE if NaNs detected
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", naive),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_naive.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # Random Forest Classifier Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[1, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[1, 2])
-
-            random_forest = RandomForestClassifier(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", random_forest),
-                    ]
-                )
-            else:
-                pipeline = Pipeline(
-                    [("scaler", StandardScaler()), ("clf", random_forest)]
-                )
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", random_forest),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_random_forest.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # KNN Classifier Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[2, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[2, 2])
-
-            knn = KNeighborsClassifier(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", knn),
-                    ]
-                )
-            else:
-                pipeline = Pipeline([("scaler", StandardScaler()), ("clf", knn)])
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", knn),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_knn.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # Logistic Regression Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[3, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[3, 2])
-
-            logistica = LogisticRegression(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", logistica),
-                    ]
-                )
-            else:
-                pipeline = Pipeline([("scaler", StandardScaler()), ("clf", logistica)])
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", logistica),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_logistica.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # Support Vector Machine Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[4, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[4, 2])
-
-            svm = SVC(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", svm),
-                    ]
-                )
-            else:
-                pipeline = Pipeline([("scaler", StandardScaler()), ("clf", svm)])
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", svm),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_svm.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # Neural Network (MLPClassifier) Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[5, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[5, 2])
-
-            rede_neural = MLPClassifier(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", rede_neural),
-                    ]
-                )
-            else:
-                pipeline = Pipeline(
-                    [("scaler", StandardScaler()), ("clf", rede_neural)]
-                )
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", rede_neural),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_rede_neural.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-            ######################################################################################
-            # XGBoost Classifier Pipeline
-            ######################################################################################
-            try:
-                params = extract_params_dict(best_param.iloc[6, 0])
-            except Exception:
-                params = extract_params_dict_correct(best_param.iloc[6, 2])
-
-            Xgboost = XGBClassifier(**params)
-
-            if oversample:
-                pipeline = Pipeline(
-                    [
-                        ("smote", SMOTE(sampling_strategy="minority", random_state=0)),
-                        ("scaler", StandardScaler()),
-                        ("clf", Xgboost),
-                    ]
-                )
-            else:
-                pipeline = Pipeline([("scaler", StandardScaler()), ("clf", Xgboost)])
-
-            scores = cross_validate(
-                pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-            )
-
-            if np.any(np.isnan(scores["test_accuracy"])) and oversample:
-                pipeline = Pipeline(
-                    [
-                        (
-                            "smote",
-                            SMOTE(
-                                sampling_strategy="minority",
-                                random_state=0,
-                                k_neighbors=3,
-                            ),
-                        ),
-                        ("scaler", StandardScaler()),
-                        ("clf", Xgboost),
-                    ]
-                )
-                scores = cross_validate(
-                    pipeline, X_cog, y_campo, cv=kfold, scoring=scoring, n_jobs=-1
-                )
-
-            resultados_xgboost.append(
-                {metric: np.mean(scores["test_" + metric]) for metric in scoring}
-            )
-
-        # Save aggregated results after all folds for each dataset identifier
-        if identifier == "gf":
-            aggregate_and_save_results(
-                path_save,
-                resultados_naive,
-                resultados_random_forest,
-                resultados_knn,
-                resultados_logistica,
-                resultados_svm,
-                resultados_rede_neural,
-                resultados_xgboost,
-                "gf",
-            )
-
-        if identifier == "gs":
-            aggregate_and_save_results(
-                path_save,
-                resultados_naive,
-                resultados_random_forest,
-                resultados_knn,
-                resultados_logistica,
-                resultados_svm,
-                resultados_rede_neural,
-                resultados_xgboost,
-                "gs",
-            )
-
-        if identifier == "gc":
-            aggregate_and_save_results(
-                path_save,
-                resultados_naive,
-                resultados_random_forest,
-                resultados_knn,
-                resultados_logistica,
-                resultados_svm,
-                resultados_rede_neural,
-                resultados_xgboost,
-                "gc",
-            )
-
-        if identifier == "sg":
-            aggregate_and_save_results(
-                path_save,
-                resultados_naive,
-                resultados_random_forest,
-                resultados_knn,
-                resultados_logistica,
-                resultados_svm,
-                resultados_rede_neural,
-                resultados_xgboost,
-                "sg",
-            )
+        # Save aggregated results after all 30 iterations for this dataset identifier
+        aggregate_and_save_results(
+            path_save,
+            results_by_algo["Naive"],
+            results_by_algo["Random forest"],
+            results_by_algo["KNN"],
+            results_by_algo["Logistic Regression"],
+            results_by_algo["SVM"],
+            results_by_algo["Neural network"],
+            results_by_algo["Xgboost"],
+            identifier,
+        )
 
 
 if __name__ == "__main__":
-    # Run the main cross-validation pipeline with specified parameters
+    _root = Path(__file__).resolve().parent.parent
+    _combo = "Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"
     run_cross_validation(
-        path_data="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
-        path_param="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
-        path_save="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)\\resultados_ml",
+        path_data=str(_root / "data" / "ML_datasets" / _combo),
+        path_param=str(_root / "best_param" / _combo),
+        path_save=str(_root / "results_CV" / _combo),
         n_clusters_Desempenho_campo=2,
         n_splits_kfold=5,
         oversample=False,

@@ -38,6 +38,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 
 def plot_vertical_clustered_with_violin(
@@ -139,55 +140,58 @@ def plot_vertical_clustered_with_violin(
 # -------------------
 # Main Execution Block
 # -------------------
+if __name__ == "__main__":
+    project_root = Path(__file__).resolve().parent.parent
+    data_normal = project_root / "data" / "Normal"
 
-# File paths for datasets containing goal-related metrics and clusters
-path_gf = "C:\\Users\\rafae\\OneDrive\\Documentos\\Mestrado\\Cogfut\\statistics\\ML\\data\\Normal\\gf_cluster.xlsx"
-path_gs = "C:\\Users\\rafae\\OneDrive\\Documentos\\Mestrado\\Cogfut\\statistics\\ML\\data\\Normal\\gs_cluster.xlsx"
-path_gc = "C:\\Users\\rafae\\OneDrive\\Documentos\\Mestrado\\Cogfut\\statistics\\ML\\data\\Normal\\gc_cluster.xlsx"
-path_sg = "C:\\Users\\rafae\\OneDrive\\Documentos\\Mestrado\\Cogfut\\statistics\\ML\\data\\Normal\\sg_cluster.xlsx"
+    # File paths for datasets containing goal-related metrics and clusters
+    path_gf = data_normal / "gf_cluster.xlsx"
+    path_gs = data_normal / "gs_cluster.xlsx"
+    path_gc = data_normal / "gc_cluster.xlsx"
+    path_sg = data_normal / "sg_cluster.xlsx"
 
-# Load datasets into pandas DataFrames
-gf_data = pd.read_excel(path_gf)
-gs_data = pd.read_excel(path_gs)
-gc_data = pd.read_excel(path_gc)
-sg_data = pd.read_excel(path_sg)
+    # Load datasets into pandas DataFrames
+    gf_data = pd.read_excel(path_gf)
+    gs_data = pd.read_excel(path_gs)
+    gc_data = pd.read_excel(path_gc)
+    sg_data = pd.read_excel(path_sg)
 
-# Create figure with 2x2 subplot grid
-fig, axs = plt.subplots(2, 2, figsize=(15, 10))
+    # Create figure with 2x2 subplot grid
+    fig, axs = plt.subplots(2, 2, figsize=(15, 10))
 
-# Generate plots for each performance metric dataset
-plot_vertical_clustered_with_violin(
-    axs[0, 0],
-    gf_data,
-    "gols_feitos",
-    "cluster",
-    "Individual goals per game",
-    "Individual Goals",
-)
+    # Generate plots for each performance metric dataset
+    plot_vertical_clustered_with_violin(
+        axs[0, 0],
+        gf_data,
+        "gols_feitos",
+        "cluster",
+        "Individual goals per game",
+        "Individual Goals",
+    )
 
-plot_vertical_clustered_with_violin(
-    axs[0, 1],
-    gs_data,
-    "gols_sofridos",
-    "cluster",
-    "Conceded goals per game",
-    "Conceded Goals",
-    invert_colors_labels=True,
-)
+    plot_vertical_clustered_with_violin(
+        axs[0, 1],
+        gs_data,
+        "gols_sofridos",
+        "cluster",
+        "Conceded goals per game",
+        "Conceded Goals",
+        invert_colors_labels=True,
+    )
 
-plot_vertical_clustered_with_violin(
-    axs[1, 0],
-    gc_data,
-    "gols_companheiros",
-    "cluster",
-    "Goals by teammates per game",
-    "Goals by Teammates",
-)
+    plot_vertical_clustered_with_violin(
+        axs[1, 0],
+        gc_data,
+        "gols_companheiros",
+        "cluster",
+        "Goals by teammates per game",
+        "Goals by Teammates",
+    )
 
-plot_vertical_clustered_with_violin(
-    axs[1, 1], sg_data, "saldo_gols", "cluster", "Net team goals per game", "Net Goals"
-)
+    plot_vertical_clustered_with_violin(
+        axs[1, 1], sg_data, "saldo_gols", "cluster", "Net team goals per game", "Net Goals"
+    )
 
-# Adjust layout to prevent overlap
-plt.tight_layout()
-plt.show()
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.show()

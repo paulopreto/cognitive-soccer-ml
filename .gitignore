@@ -423,6 +423,7 @@ FodyWeavers.xsd
 # -----------------------------------------------------------------------------
 # Python / uv (Linux, Windows, macOS)
 # -----------------------------------------------------------------------------
+# Note: data/ML_datasets/**/*.pkl are versioned for reproducibility; do not add *.pkl globally.
 # Virtual environments
 .venv/
 venv/

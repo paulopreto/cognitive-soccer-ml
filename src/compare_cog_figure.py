@@ -44,14 +44,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from pathlib import Path
 from scipy.stats import mannwhitneyu
 
 # ---------------------------
 # Data Loading and Preprocessing
 # ---------------------------
-df = pd.read_csv(
-    r"D:\Processamento_mestrado_Sports_Science\final_analysis\data\Dataset_cog_clusters.csv"
-)
+_project_root = Path(__file__).resolve().parent.parent
+df = pd.read_csv(_project_root / "data" / "Dataset_cog_clusters.csv")
 
 # Convert 'Flexibilidade cognitiva (B-A)' from milliseconds to seconds
 df["Flexibilidade cognitiva (B-A)"] = df["Flexibilidade cognitiva (B-A)"] / 1000
@@ -92,8 +92,8 @@ comparisons = {
 palette = ["#D62728", "#1F77B4"]
 
 # Output folder for saving the figure
-save_folder = r"D:\Processamento_mestrado_Sports_Science\final_analysis\figures"
-os.makedirs(save_folder, exist_ok=True)
+save_folder = _project_root / "figures"
+save_folder.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------
@@ -279,7 +279,7 @@ plt.tight_layout(rect=[0, 0.05, 1, 0.96])
 fig.align_ylabels(axes[:, 0])
 
 # Save Figure
-filename = os.path.join(save_folder, "comparacoes_todas_juntas.png")
+filename = save_folder / "comparacoes_todas_juntas.png"
 fig.savefig(filename, dpi=300, bbox_inches="tight")
 plt.show()
 print(f"\n[Image saved at: {filename}]")

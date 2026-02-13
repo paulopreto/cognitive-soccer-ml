@@ -36,6 +36,7 @@ import pandas as pd
 from scipy import stats
 import numpy as np
 import itertools
+from pathlib import Path
 
 
 # -------------------------------
@@ -103,44 +104,44 @@ def run_kruskal_with_tests(df):
 # -------------------------------
 # Main Execution
 # -------------------------------
+if __name__ == "__main__":
+    project_root = Path(__file__).resolve().parent.parent
+    file_path = project_root / "results_CV" / "sg_resultados_3.xlsx"
 
-# Path to the Excel file with multiple sheets
-file_path = "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\results_CV\\sg_resultados_3.xlsx"
+    # Load all sheets
+    xls = pd.ExcelFile(file_path)
+    all_sheets_results = {}
 
-# Load all sheets
-xls = pd.ExcelFile(file_path)
-all_sheets_results = {}
+    # Iterate over all sheets to apply the statistical tests
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name).dropna()
+        all_sheets_results[sheet_name] = run_kruskal_with_tests(df)
 
-# Iterate over all sheets to apply the statistical tests
-for sheet_name in xls.sheet_names:
-    df = pd.read_excel(xls, sheet_name=sheet_name).dropna()
-    all_sheets_results[sheet_name] = run_kruskal_with_tests(df)
+    # -------------------------------
+    # Save Statistical Results to Excel
+    # -------------------------------
 
-# -------------------------------
-# Save Statistical Results to Excel
-# -------------------------------
+    # Define output path for the statistical summary Excel file
+    output_path = file_path.with_stem(file_path.stem + "_kruskal_stats")
 
-# Define output path for the statistical summary Excel file
-output_path = file_path.replace(".xlsx", "_kruskal_stats.xlsx")
+    with pd.ExcelWriter(output_path) as writer:
+        for sheet_name, results in all_sheets_results.items():
+            # Save Normality Test Results
+            normality_df = pd.DataFrame(results["normality"]).transpose()
+            normality_df.to_excel(writer, sheet_name=f"{sheet_name}_normality")
 
-with pd.ExcelWriter(output_path) as writer:
-    for sheet_name, results in all_sheets_results.items():
-        # Save Normality Test Results
-        normality_df = pd.DataFrame(results["normality"]).transpose()
-        normality_df.to_excel(writer, sheet_name=f"{sheet_name}_normality")
+            # Save Homogeneity Test Result
+            homogeneity_df = pd.DataFrame([results["homogeneity"]])
+            homogeneity_df.to_excel(
+                writer, sheet_name=f"{sheet_name}_homogeneity", index=False
+            )
 
-        # Save Homogeneity Test Result
-        homogeneity_df = pd.DataFrame([results["homogeneity"]])
-        homogeneity_df.to_excel(
-            writer, sheet_name=f"{sheet_name}_homogeneity", index=False
-        )
+            # Save Kruskal-Wallis Test Result
+            kruskal_df = pd.DataFrame([results["kruskal"]])
+            kruskal_df.to_excel(writer, sheet_name=f"{sheet_name}_kruskal", index=False)
 
-        # Save Kruskal-Wallis Test Result
-        kruskal_df = pd.DataFrame([results["kruskal"]])
-        kruskal_df.to_excel(writer, sheet_name=f"{sheet_name}_kruskal", index=False)
+            # Save Post-hoc Dunn Test Results
+            posthoc_df = results["posthoc"]
+            posthoc_df.to_excel(writer, sheet_name=f"{sheet_name}_posthoc", index=False)
 
-        # Save Post-hoc Dunn Test Results
-        posthoc_df = results["posthoc"]
-        posthoc_df.to_excel(writer, sheet_name=f"{sheet_name}_posthoc", index=False)
-
-print(f"[OK] Kruskal-Wallis and Dunn's post-hoc results saved to {output_path}")
+    print(f"[OK] Kruskal-Wallis and Dunn's post-hoc results saved to {output_path}")

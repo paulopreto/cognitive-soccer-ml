@@ -36,6 +36,8 @@ Supported Algorithms:
 
 import os
 import pickle
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
@@ -126,11 +128,11 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
 
     # Iterate through each dataset configuration
     for idx, info in enumerate(datasets_info):
-        path_data = info["path_data"]
+        path_data = Path(info["path_data"])
         identifier = info["identificador"]
 
         # Load dataset (pickle file format)
-        with open(os.path.join(path_data, f"cogfut_{identifier}.pkl"), "rb") as f:
+        with open(path_data / f"cogfut_{identifier}.pkl", "rb") as f:
             X_train, y_train, X_test, y_test = pickle.load(f)
 
         # Concatenate train and test sets for full dataset evaluation
@@ -234,36 +236,52 @@ def run_all_NestedCV_matrices(datasets_info, algorithm_name, path_save_img_final
 
     # Adjust layout and save final figure
     plt.tight_layout()
-    os.makedirs(path_save_img_final, exist_ok=True)
-    full_path = os.path.join(
-        path_save_img_final, f"confusion_matrices_NestedCV_{algorithm_name}.png"
-    )
+    path_save_img_final = Path(path_save_img_final)
+    path_save_img_final.mkdir(parents=True, exist_ok=True)
+    full_path = path_save_img_final / f"confusion_matrices_NestedCV_{algorithm_name}.png"
     plt.savefig(full_path, dpi=300)
-    plt.show()
+    plt.close()
     print(f"[OK] Final figure saved: {full_path}")
+
+
+# -------------------------------
+# Default best combinations per target (article Table 1 / Figure 8)
+# -------------------------------
+BEST_COMBO_GF = "Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)"
+BEST_COMBO_GS = "Memory_span"
+BEST_COMBO_GC = "Acuracia_nogo_Capacidade_de_rastreamento"
+BEST_COMBO_SG = "Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)"
+
+
+def run_nested_cv_figure(ml_datasets_dir, path_save_img_final, algorithm_name="KNeighborsClassifier"):
+    """
+    Run nested CV and save confusion matrices figure (reproduces article Figure 8).
+
+    Uses the best cognitive-feature combination per target from the article.
+    ml_datasets_dir and path_save_img_final can be str or pathlib.Path.
+    """
+    ml_datasets_dir = Path(ml_datasets_dir)
+    path_save_img_final = Path(path_save_img_final)
+    datasets_info = [
+        {"path_data": str(ml_datasets_dir / BEST_COMBO_GF), "identificador": "gf"},
+        {"path_data": str(ml_datasets_dir / BEST_COMBO_GS), "identificador": "gs"},
+        {"path_data": str(ml_datasets_dir / BEST_COMBO_GC), "identificador": "gc"},
+        {"path_data": str(ml_datasets_dir / BEST_COMBO_SG), "identificador": "sg"},
+    ]
+    run_all_NestedCV_matrices(
+        datasets_info=datasets_info,
+        algorithm_name=algorithm_name,
+        path_save_img_final=str(path_save_img_final),
+    )
 
 
 # ===== EXECUTION =====
 if __name__ == "__main__":
-    run_all_NestedCV_matrices(
-        datasets_info=[
-            {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Capacidade_de_rastreamento_Flexibilidade_cognitiva_(B-A)",
-                "identificador": "gf",
-            },
-            {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span",
-                "identificador": "gs",
-            },
-            {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Acuracia_nogo_Capacidade_de_rastreamento",
-                "identificador": "gc",
-            },
-            {
-                "path_data": "D:\\Processamento_mestrado_Sports_Science\\final_analysis\\data\\ML_datasets\\Memory_span_Acuracia_nogo_Flexibilidade_cognitiva_(B-A)",
-                "identificador": "sg",
-            },
-        ],
+    project_root = Path(__file__).resolve().parent.parent
+    ml_datasets_dir = project_root / "data" / "ML_datasets"
+    path_save = project_root / "figures"
+    run_nested_cv_figure(
+        ml_datasets_dir=ml_datasets_dir,
+        path_save_img_final=path_save,
         algorithm_name="KNeighborsClassifier",
-        path_save_img_final="D:\\Processamento_mestrado_Sports_Science\\final_analysis\\matriz_final_NestedCV",
     )
